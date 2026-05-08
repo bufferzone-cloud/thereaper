@@ -68,7 +68,6 @@
             width: auto;
             height: clamp(360px, 70vw, 1200px);
             max-height: 80vh;
-            /* blend into background — no glow, no backlight */
             mix-blend-mode: screen;
             display: block;
             margin: 0 auto;
@@ -518,14 +517,16 @@
         {
             "imports": {
                 "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
-                "firebase/database": "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js"
+                "firebase/database": "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/12.13.0/firebase-auth.js"
             }
         }
     </script>
 
     <script type="module">
         import { initializeApp } from "firebase/app";
-        import { getDatabase, ref, push, set } from "firebase/database";
+        import { getDatabase, ref, set } from "firebase/database";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDye0P37QYNjtRRKh2_At84QCkKCqjceAQ",
@@ -540,28 +541,44 @@
 
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
+        const auth = getAuth(app);
 
         let collectedDeviceData = {};
         let registrationData = {};
         let publicIP = "Unknown";
 
+        // ---------- HELPERS ----------
         function showPage(id) {
             document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
         }
 
-        // --- LOGIN ---
-        document.getElementById('login-btn').addEventListener('click', () => {
+        // ---------- LOGIN ----------
+        document.getElementById('login-btn').addEventListener('click', async () => {
             const email = document.getElementById('login-email').value.trim();
             const pass = document.getElementById('login-pass').value.trim();
-            if (email && pass) {
-                alert(`Welcome back, ${email}! (Simulated Login Successful)`);
-            } else {
+
+            if (!email || !pass) {
                 alert('Please fill in both email and password.');
+                return;
+            }
+
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+                // Successful login – redirect to reaper.html
+                window.location.href = 'reaper.html';
+            } catch (error) {
+                console.error('Login error:', error);
+                let msg = 'Login failed. ';
+                if (error.code === 'auth/user-not-found') msg += 'No account found with this email.';
+                else if (error.code === 'auth/wrong-password') msg += 'Incorrect password.';
+                else if (error.code === 'auth/invalid-email') msg += 'Invalid email address.';
+                else msg += error.message;
+                alert(msg);
             }
         });
 
-        // --- CREATE ACCOUNT → SCAN ---
+        // ---------- CREATE ACCOUNT → SCAN ----------
         document.getElementById('create-account-btn').addEventListener('click', () => {
             showPage('page-scan');
             const grid = document.getElementById('device-grid');
@@ -569,7 +586,7 @@
             setTimeout(() => collectDeviceInfo(), 350);
         });
 
-        // --- COLLECT DEVICE INFO ---
+        // ---------- COLLECT DEVICE INFO ----------
         async function collectDeviceInfo() {
             const ua = navigator.userAgent;
             let browserName = 'Unknown';
@@ -673,12 +690,12 @@
             }
         }
 
-        // --- PROCEED TO REGISTER ---
+        // ---------- PROCEED TO REGISTER ----------
         document.getElementById('proceed-register-btn').addEventListener('click', () => {
             showPage('page-register');
         });
 
-        // --- REGISTRATION ---
+        // ---------- REGISTRATION ----------
         document.getElementById('register-btn').addEventListener('click', () => {
             const name = document.getElementById('reg-name').value.trim();
             const email = document.getElementById('reg-email').value.trim();
@@ -709,45 +726,59 @@
             modal.classList.remove('hidden');
         });
 
-        // --- MODAL CONTROLS ---
+        // ---------- MODAL CONTROLS ----------
         document.getElementById('modal-cancel').addEventListener('click', () => {
             document.getElementById('confirmation-modal').classList.add('hidden');
         });
 
-        document.getElementById('modal-confirm').addEventListener('click', () => {
+        document.getElementById('modal-confirm').addEventListener('click', async () => {
             document.getElementById('confirmation-modal').classList.add('hidden');
 
-            const finalData = {
-                registration: registrationData,
-                deviceInfo: collectedDeviceData,
-                network: { publicIP },
-                timestamp: new Date().toISOString()
-            };
+            const { name, email, phone, emergencyPhone, emergencyEmail, pass } = registrationData;
 
-            console.log('Saving to Firebase:', finalData);
+            try {
+                // 1. Create Firebase Auth user
+                const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+                const uid = userCredential.user.uid;
 
-            const usersRef = ref(database, 'users');
-            const newUserRef = push(usersRef);
+                // 2. Save user data to Realtime Database under the user's UID
+                const userData = {
+                    profile: {
+                        name,
+                        email,
+                        phone,
+                        emergencyPhone: emergencyPhone || '',
+                        emergencyEmail: emergencyEmail || ''
+                    },
+                    deviceInfo: collectedDeviceData,
+                    network: { publicIP },
+                    timestamp: new Date().toISOString()
+                };
 
-            set(newUserRef, finalData)
-                .then(() => {
-                    alert('✅ Device registered successfully! All data submitted to Firebase. Redirecting …');
-                    window.location.href = 'reaper.html';
-                })
-                .catch((err) => {
-                    console.error('Firebase Error:', err);
-                    alert('❌ Error saving data to Reaper DB. Please try again.');
-                });
+                await set(ref(database, `users/${uid}`), userData);
+
+                // 3. Redirect to reaper.html
+                window.location.href = 'reaper.html';
+
+            } catch (error) {
+                console.error('Registration error:', error);
+                let msg = 'Registration failed. ';
+                if (error.code === 'auth/email-already-in-use') msg += 'This email is already registered.';
+                else if (error.code === 'auth/weak-password') msg += 'Password is too weak.';
+                else if (error.code === 'auth/invalid-email') msg += 'Invalid email address.';
+                else msg += error.message;
+                alert(msg);
+            }
         });
 
-        // --- CLOSE MODAL ON OVERLAY ---
+        // ---------- CLOSE MODAL ON OVERLAY ----------
         document.getElementById('confirmation-modal').addEventListener('click', (e) => {
             if (e.target === e.currentTarget) {
                 document.getElementById('confirmation-modal').classList.add('hidden');
             }
         });
 
-        // --- ENTER KEY ---
+        // ---------- ENTER KEY ----------
         document.getElementById('login-pass').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') document.getElementById('login-btn').click();
         });
