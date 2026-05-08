@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
     <title>The Reaper · Dashboard</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet" />
     <style>
         * {
@@ -67,13 +68,14 @@
         #map-container {
             width: 100%;
             max-width: 900px;
-            height: 320px;
+            height: 340px;
             border-radius: 14px;
             overflow: hidden;
             border: 1px solid rgba(0, 229, 255, 0.15);
             box-shadow: 0 0 40px rgba(0, 229, 255, 0.05);
             margin-bottom: 18px;
             background: #111;
+            position: relative;
         }
         #map {
             width: 100%;
@@ -379,6 +381,7 @@
 
     <div class="action-row">
         <button class="action-btn" id="setup-device-btn">CONTINUE DEVICE SETUP</button>
+        <button class="action-btn" id="track-device-btn">📍 TRACK DEVICE</button>
         <button class="action-btn danger" id="delete-device-btn">DELETE DEVICE</button>
     </div>
 
@@ -455,11 +458,13 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
     </script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js">
+    </script>
 
     <script type="module">
         import { initializeApp } from "firebase/app";
         import { getDatabase, ref, set, get, remove, update, onValue } from "firebase/database";
-        import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
+        import { getAuth, onAuthStateChanged } from "firebase/auth";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDye0P37QYNjtRRKh2_At84QCkKCqjceAQ",
@@ -481,23 +486,25 @@
         let registeredDeviceId = null;
         let deviceDataRef = null;
         let map = null;
-        let marker = null;
+        let phoneMarker = null; // marker for registered device (phone)
+        let currentMarker = null; // marker for current device (laptop)
+        let routingControl = null;
         let collectedDeviceData = {};
         let lastKnownLat = 0;
         let lastKnownLon = 0;
-        let locationWatchId = null;
         let updateInterval = null;
         let wizardStep = 1;
         let wizardData = {};
-        let deviceListener = null;
 
         const userNameDisplay = document.getElementById('user-name-display');
         const deviceGrid = document.getElementById('device-details-grid');
         const noDeviceMsg = document.getElementById('no-device-message');
         const setupBtn = document.getElementById('setup-device-btn');
         const deleteBtn = document.getElementById('delete-device-btn');
+        const trackBtn = document.getElementById('track-device-btn');
         const wizardModal = document.getElementById('wizard-modal');
 
+        // ---------- AUTH ----------
         function showLoginRedirect() {
             alert('No authenticated user found. Please log in again.');
             window.location.href = 'index.html';
@@ -517,6 +524,7 @@
             }
         });
 
+        // ---------- LOAD USER DEVICE ----------
         async function loadUserDevice() {
             if (!currentUid) return;
             const userRef = ref(database, 'users/' + currentUid);
@@ -558,11 +566,24 @@
                     const data = snap.val();
                     wizardData = data;
                     renderDeviceDetails(data.deviceDetails || {});
-                    if (data.location) {
-                        lastKnownLat = data.location.lat || 0;
-                        lastKnownLon = data.location.lon || 0;
-                        updateMap(lastKnownLat, lastKnownLon);
+                    
+                    // Registered device's fixed location (phone)
+                    const phoneLoc = data.phoneLocation || { lat: 0, lon: 0 };
+                    updatePhoneMarker(phoneLoc.lat, phoneLoc.lon);
+
+                    // Try to load current location (laptop) from separate path
+                    const currentLocRef = ref(database, 'users/' + currentUid + '/currentLocation');
+                    const currentSnap = await get(currentLocRef);
+                    if (currentSnap.exists()) {
+                        const curLoc = currentSnap.val();
+                        updateCurrentMarker(curLoc.lat, curLoc.lon);
+                    } else {
+                        // fallback to last known
+                        if (lastKnownLat && lastKnownLon) {
+                            updateCurrentMarker(lastKnownLat, lastKnownLon);
+                        }
                     }
+
                     noDeviceMsg.classList.add('hidden');
                     deviceGrid.classList.remove('hidden');
                     setupBtn.textContent = 'UPDATE DEVICE SETUP';
@@ -576,6 +597,7 @@
             }
         }
 
+        // ---------- RENDER DETAILS ----------
         function renderDeviceDetails(details) {
             deviceGrid.innerHTML = '';
             if (!details || Object.keys(details).length === 0) {
@@ -590,6 +612,7 @@
             }
         }
 
+        // ---------- MAP & MARKERS ----------
         function initMap(lat, lon) {
             if (map) {
                 map.invalidateSize();
@@ -601,23 +624,104 @@
                 maxZoom: 19
             }).addTo(map);
             if (lat && lon) {
-                marker = L.marker([lat, lon]).addTo(map);
+                updatePhoneMarker(lat, lon);
             }
         }
 
-        function updateMap(lat, lon) {
+        function updatePhoneMarker(lat, lon) {
             if (!map) {
                 initMap(lat, lon);
                 return;
             }
-            if (marker) {
-                marker.setLatLng([lat, lon]);
+            if (phoneMarker) {
+                phoneMarker.setLatLng([lat, lon]);
             } else {
-                marker = L.marker([lat, lon]).addTo(map);
+                const phoneIcon = L.divIcon({
+                    className: 'phone-icon',
+                    html: '📱',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 30]
+                });
+                phoneMarker = L.marker([lat, lon], { icon: phoneIcon }).addTo(map)
+                    .bindPopup('<b>Registered Device</b><br>Phone location');
             }
-            map.setView([lat, lon], map.getZoom(), { animate: true });
+            if (!map.getBounds().contains([lat, lon])) {
+                map.setView([lat, lon], map.getZoom(), { animate: true });
+            }
         }
 
+        function updateCurrentMarker(lat, lon) {
+            if (!map) {
+                initMap(lat, lon);
+                return;
+            }
+            if (currentMarker) {
+                currentMarker.setLatLng([lat, lon]);
+            } else {
+                const userIcon = L.divIcon({
+                    className: 'user-icon',
+                    html: '📍',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 30]
+                });
+                currentMarker = L.marker([lat, lon], { icon: userIcon }).addTo(map)
+                    .bindPopup('<b>Your Current Device</b><br>Laptop / Tablet location');
+            }
+        }
+
+        function getPhoneLocation() {
+            if (!phoneMarker) return null;
+            const latlng = phoneMarker.getLatLng();
+            return { lat: latlng.lat, lon: latlng.lng };
+        }
+
+        function getCurrentLocation() {
+            if (currentMarker) {
+                const latlng = currentMarker.getLatLng();
+                return { lat: latlng.lat, lon: latlng.lng };
+            }
+            if (lastKnownLat && lastKnownLon) {
+                return { lat: lastKnownLat, lon: lastKnownLon };
+            }
+            return null;
+        }
+
+        // ---------- TRACK ROUTE ----------
+        trackBtn.addEventListener('click', async () => {
+            if (!map) {
+                alert('Map is not ready yet.');
+                return;
+            }
+            const phoneLoc = getPhoneLocation();
+            const currentLoc = getCurrentLocation();
+            if (!phoneLoc || !currentLoc) {
+                alert('Missing location data for either the registered device or your current device.');
+                return;
+            }
+            // Clear existing route
+            if (routingControl) {
+                map.removeControl(routingControl);
+                routingControl = null;
+            }
+            // Build route using Leaflet Routing Machine
+            const waypoints = [
+                L.latLng(currentLoc.lat, currentLoc.lon),
+                L.latLng(phoneLoc.lat, phoneLoc.lon)
+            ];
+            routingControl = L.Routing.control({
+                waypoints: waypoints,
+                lineOptions: {
+                    styles: [{ color: '#00e5ff', weight: 4, opacity: 0.7 }]
+                },
+                showAlternatives: false,
+                fitSelectedRoutes: true,
+                router: L.Routing.osrmv1({
+                    serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1'
+                })
+            }).addTo(map);
+        });
+
+        // ---------- LOCATION WATCH ----------
         function startLocationWatch() {
             if (!navigator.geolocation) return;
             if (locationWatchId) navigator.geolocation.clearWatch(locationWatchId);
@@ -625,10 +729,15 @@
                 (pos) => {
                     lastKnownLat = pos.coords.latitude;
                     lastKnownLon = pos.coords.longitude;
-                    if (map) {
-                        updateMap(lastKnownLat, lastKnownLon);
-                    } else {
-                        initMap(lastKnownLat, lastKnownLon);
+                    updateCurrentMarker(lastKnownLat, lastKnownLon);
+                    // Also save current location to Firebase (for other devices to see)
+                    if (currentUid) {
+                        const curLocRef = ref(database, 'users/' + currentUid + '/currentLocation');
+                        set(curLocRef, {
+                            lat: lastKnownLat,
+                            lon: lastKnownLon,
+                            timestamp: new Date().toISOString()
+                        }).catch(() => {});
                     }
                 },
                 (err) => {
@@ -641,6 +750,7 @@
             );
         }
 
+        // ---------- COLLECT DEVICE INFO ----------
         function collectDeviceInfo() {
             const ua = navigator.userAgent;
             let browserName = 'Unknown';
@@ -700,32 +810,36 @@
             };
         }
 
+        // ---------- PERIODIC UPDATES (only current location & device info) ----------
         function startPeriodicUpdates() {
             if (updateInterval) clearInterval(updateInterval);
             updateInterval = setInterval(async () => {
-                if (!currentUid || !registeredDeviceId || !deviceDataRef) return;
-                if (Object.keys(collectedDeviceData).length === 0) {
-                    collectedDeviceData = collectDeviceInfo();
+                if (!currentUid) return;
+                // Update current device location (already being done in watchPosition)
+                // Also update the registered device's deviceDetails (but keep phoneLocation fixed)
+                if (registeredDeviceId && deviceDataRef) {
+                    if (Object.keys(collectedDeviceData).length === 0) {
+                        collectedDeviceData = collectDeviceInfo();
+                    }
+                    try {
+                        // Only update details, NOT location
+                        await update(deviceDataRef, {
+                            deviceDetails: collectedDeviceData,
+                            lastUpdated: new Date().toISOString()
+                        });
+                    } catch (err) {
+                        // silent
+                    }
                 }
-                const updates = {
-                    location: {
-                        lat: lastKnownLat || 0,
-                        lon: lastKnownLon || 0,
-                        timestamp: new Date().toISOString()
-                    },
-                    deviceDetails: collectedDeviceData,
-                    lastUpdated: new Date().toISOString()
-                };
+                // Update user's lastSeen
                 try {
-                    await update(deviceDataRef, updates);
                     const userRef = ref(database, 'users/' + currentUid);
                     await update(userRef, { lastSeen: new Date().toISOString() });
-                } catch (err) {
-                    // silent
-                }
+                } catch (_) {}
             }, 10000);
         }
 
+        // ---------- DELETE DEVICE ----------
         deleteBtn.addEventListener('click', async () => {
             if (!currentUid || !registeredDeviceId) {
                 alert('No registered device to delete.');
@@ -734,14 +848,18 @@
             if (!confirm('Are you sure you want to DELETE this device? All data will be lost.')) return;
             try {
                 await remove(deviceDataRef);
+                if (phoneMarker) {
+                    map.removeLayer(phoneMarker);
+                    phoneMarker = null;
+                }
                 registeredDeviceId = null;
                 deviceDataRef = null;
                 noDeviceMsg.classList.remove('hidden');
                 deviceGrid.innerHTML = '';
                 setupBtn.textContent = 'CONTINUE DEVICE SETUP';
-                if (marker) {
-                    marker.remove();
-                    marker = null;
+                if (routingControl) {
+                    map.removeControl(routingControl);
+                    routingControl = null;
                 }
                 alert('Device deleted successfully.');
             } catch (err) {
@@ -750,6 +868,7 @@
             }
         });
 
+        // ---------- WIZARD ----------
         setupBtn.addEventListener('click', () => {
             openWizard();
         });
@@ -824,7 +943,8 @@
                     alt: document.getElementById('wiz-alt').value.trim()
                 },
                 deviceDetails: collectDeviceInfo(),
-                location: {
+                // Store phone location separately (fixed at registration)
+                phoneLocation: {
                     lat: lastKnownLat || 0,
                     lon: lastKnownLon || 0,
                     timestamp: new Date().toISOString()
@@ -837,6 +957,15 @@
                 const deviceRef = ref(database, 'users/' + currentUid + '/registeredDevices/' + deviceId);
                 await set(deviceRef, deviceData);
                 await update(ref(database, 'users/' + currentUid), { registeredDeviceId: deviceId });
+                // Also save current location separately
+                if (lastKnownLat && lastKnownLon) {
+                    const curLocRef = ref(database, 'users/' + currentUid + '/currentLocation');
+                    await set(curLocRef, {
+                        lat: lastKnownLat,
+                        lon: lastKnownLon,
+                        timestamp: new Date().toISOString()
+                    });
+                }
                 registeredDeviceId = deviceId;
                 deviceDataRef = deviceRef;
                 wizardData = deviceData;
@@ -845,7 +974,12 @@
                 noDeviceMsg.classList.add('hidden');
                 deviceGrid.classList.remove('hidden');
                 setupBtn.textContent = 'UPDATE DEVICE SETUP';
-                updateMap(lastKnownLat, lastKnownLon);
+                updatePhoneMarker(deviceData.phoneLocation.lat, deviceData.phoneLocation.lon);
+                updateCurrentMarker(lastKnownLat, lastKnownLon);
+                if (routingControl) {
+                    map.removeControl(routingControl);
+                    routingControl = null;
+                }
                 alert('Device registered successfully!');
             } catch (err) {
                 console.error('Save error:', err);
