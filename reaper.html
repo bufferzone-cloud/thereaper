@@ -273,6 +273,92 @@
             flex-shrink: 0;
         }
 
+        /* ---------- RING MODAL (60% transparency) ---------- */
+        .ring-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .ring-modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .ring-modal-box {
+            background: rgba(10, 10, 10, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            border-radius: 24px;
+            padding: 40px 48px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.8);
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        .ring-modal-overlay.active .ring-modal-box {
+            transform: scale(1);
+        }
+        .ring-modal-box .bell-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 16px;
+            animation: ringBell 0.6s ease-in-out infinite alternate;
+        }
+        @keyframes ringBell {
+            0% {
+                transform: rotate(-8deg) scale(1);
+            }
+            100% {
+                transform: rotate(8deg) scale(1.05);
+            }
+        }
+        .ring-modal-box .bell-icon svg {
+            width: 100%;
+            height: 100%;
+            fill: #00e5ff;
+            filter: drop-shadow(0 0 20px rgba(0, 229, 255, 0.3));
+        }
+        .ring-modal-box h2 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            color: #00e5ff;
+            margin-bottom: 6px;
+        }
+        .ring-modal-box p {
+            color: #aaa;
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+        }
+        .ring-modal-box .btn-stop-ring {
+            padding: 10px 32px;
+            background: #00e5ff;
+            color: #000;
+            font-weight: 700;
+            font-size: 0.9rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border: none;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .ring-modal-box .btn-stop-ring:hover {
+            background: #66f0ff;
+            box-shadow: 0 0 40px rgba(0, 229, 255, 0.3);
+        }
+
         /* ---------- RESPONSIVE ---------- */
         @media (max-width: 640px) {
             .ui-header {
@@ -316,6 +402,16 @@
             .icon-svg {
                 width: 12px;
                 height: 12px;
+            }
+            .ring-modal-box {
+                padding: 28px 20px;
+            }
+            .ring-modal-box .bell-icon {
+                width: 56px;
+                height: 56px;
+            }
+            .ring-modal-box h2 {
+                font-size: 0.9rem;
             }
         }
         @media (max-width: 400px) {
@@ -400,6 +496,21 @@
 
     </div>
 
+    <!-- ===== RING MODAL (60% transparency) ===== -->
+    <div class="ring-modal-overlay" id="ring-modal">
+        <div class="ring-modal-box">
+            <div class="bell-icon">
+                <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" fill="currentColor"/>
+                    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" fill="currentColor" opacity="0.3"/>
+                </svg>
+            </div>
+            <h2>🔔 INCOMING RING</h2>
+            <p>The registered device is ringing your device.<br/>Click STOP to silence.</p>
+            <button class="btn-stop-ring" id="stop-ring-btn">STOP RING</button>
+        </div>
+    </div>
+
     <!-- ===== MAP & ROUTING LIBRARIES ===== -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
     </script>
@@ -423,7 +534,7 @@
         //  MODULE IMPORTS
         // ================================================================
         import { initializeApp } from "firebase/app";
-        import { getDatabase, ref, get, set, update, remove } from "firebase/database";
+        import { getDatabase, ref, get, set, update, remove, onValue } from "firebase/database";
         import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 
         // ================================================================
@@ -474,6 +585,8 @@
         const deviceGrid = document.getElementById('device-details-grid');
         const noDeviceMsg = document.getElementById('no-device-message');
         const logoutBtn = document.getElementById('logout-btn');
+        const ringModal = document.getElementById('ring-modal');
+        const stopRingBtn = document.getElementById('stop-ring-btn');
 
         // ================================================================
         //  AUTH STATE LISTENER
@@ -485,11 +598,29 @@
                 await loadDeviceData();
                 startLocationWatch();
                 startPeriodicUpdates();
+                // Listen for phone location changes from Firebase
+                listenToPhoneLocation();
             } else {
                 alert('Please log in again.');
                 window.location.href = 'index.html';
             }
         });
+
+        // ================================================================
+        //  LISTEN TO PHONE LOCATION (real-time updates)
+        // ================================================================
+        function listenToPhoneLocation() {
+            if (!currentUid || !registeredDeviceId) return;
+            const phoneLocRef = ref(database, 'users/' + currentUid + '/registeredDevices/' + registeredDeviceId + '/phoneLocation');
+            onValue(phoneLocRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const loc = snapshot.val();
+                    if (loc.lat && loc.lon) {
+                        updatePhoneMarker(loc.lat, loc.lon);
+                    }
+                }
+            });
+        }
 
         // ================================================================
         //  LOGOUT HANDLER
@@ -618,6 +749,9 @@
                 attribution: ''
             }).addTo(map);
             if (lat && lon) updatePhoneMarker(lat, lon);
+
+            // Add a scale control to show meters
+            L.control.scale({ position: 'bottomright', metric: true, imperial: false }).addTo(map);
         }
 
         // ================================================================
@@ -650,7 +784,7 @@
         }
 
         // ================================================================
-        //  UPDATE PHONE MARKER (📱)
+        //  UPDATE PHONE MARKER (📱) with pulsing blue circle
         // ================================================================
         function updatePhoneMarker(lat, lon) {
             if (!map) {
@@ -692,11 +826,11 @@
                 }, 100);
             }
 
-            // ---- Zoom in to show both points ----
+            // ---- Zoom to show both points ----
             if (currentMarker) {
                 const cur = currentMarker.getLatLng();
                 const bounds = L.latLngBounds([cur.lat, cur.lng], [lat, lon]);
-                map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
+                map.fitBounds(bounds, { padding: [40, 40], maxZoom: 18 });
             } else {
                 map.setView([lat, lon], 14, { animate: true });
             }
@@ -720,14 +854,14 @@
             if (phoneMarker) {
                 const phone = phoneMarker.getLatLng();
                 const bounds = L.latLngBounds([lat, lon], [phone.lat, phone.lng]);
-                map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
+                map.fitBounds(bounds, { padding: [40, 40], maxZoom: 18 });
             } else {
                 map.setView([lat, lon], 14, { animate: true });
             }
         }
 
         // ================================================================
-        //  GET PHONE LOCATION
+        //  GET LOCATIONS
         // ================================================================
         function getPhoneLocation() {
             if (!phoneMarker) return null;
@@ -735,9 +869,6 @@
             return { lat: p.lat, lon: p.lng };
         }
 
-        // ================================================================
-        //  GET CURRENT LOCATION
-        // ================================================================
         function getCurrentLocation() {
             if (currentMarker) {
                 const p = currentMarker.getLatLng();
@@ -750,7 +881,7 @@
         }
 
         // ================================================================
-        //  TRACK DEVICE BUTTON — draws route between both devices
+        //  TRACK DEVICE — draws route + zooms to 50 meters
         // ================================================================
         trackBtn.addEventListener('click', async () => {
             if (!map) {
@@ -772,11 +903,12 @@
                 routingControl = null;
             }
 
-            // Zoom to fit both points
+            // ---- Zoom to ~50 meters (zoom level 18) ----
+            // First fit bounds to show both points, then zoom in further
             const bounds = L.latLngBounds([currentLoc.lat, currentLoc.lon], [phoneLoc.lat, phoneLoc.lon]);
-            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
+            map.fitBounds(bounds, { padding: [20, 20], maxZoom: 18 });
 
-            // Attempt to draw a route
+            // ---- Draw route ----
             const waypoints = [
                 L.latLng(currentLoc.lat, currentLoc.lon),
                 L.latLng(phoneLoc.lat, phoneLoc.lon)
@@ -808,7 +940,7 @@
         });
 
         // ================================================================
-        //  RING DEVICE — plays a ringtone using Web Audio API
+        //  RING DEVICE — shows modal + plays ringtone on UNREGISTERED device
         // ================================================================
         ringBtn.addEventListener('click', () => {
             if (isRinging) {
@@ -821,17 +953,17 @@
         function startRing() {
             if (isRinging) return;
             isRinging = true;
-            ringBtn.textContent = 'STOP';
-            ringBtn.style.borderColor = '#ff5555';
-            ringBtn.style.color = '#ff5555';
 
+            // ---- Show modal with 60% transparency ----
+            ringModal.classList.add('active');
+
+            // ---- Play ringtone ----
             try {
                 ringAudioContext = new(window.AudioContext || window.webkitAudioContext)();
 
-                // ---- Ringtone pattern: 0.4 sec on, 0.2 sec off, repeat ----
+                // Ringtone pattern: 0.4 sec on, 0.2 sec off
                 let noteIndex = 0;
-                const notes = [800, 1000, 800, 1000, 800, 1000];
-                let notePosition = 0;
+                const frequencies = [800, 1000, 800, 1000, 800, 1000, 900, 1100];
 
                 ringInterval = setInterval(() => {
                     if (!ringAudioContext) {
@@ -840,13 +972,12 @@
                     }
 
                     try {
-                        // Play a note
                         const osc = ringAudioContext.createOscillator();
                         const gain = ringAudioContext.createGain();
                         const now = ringAudioContext.currentTime;
 
                         osc.type = 'sine';
-                        osc.frequency.setValueAtTime(notes[noteIndex % notes.length], now);
+                        osc.frequency.setValueAtTime(frequencies[noteIndex % frequencies.length], now);
                         gain.gain.setValueAtTime(0.3, now);
                         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
 
@@ -856,7 +987,6 @@
                         osc.stop(now + 0.35);
 
                         noteIndex++;
-                        notePosition = (notePosition + 0.4) % 1.2;
 
                     } catch (_) { /* silent */ }
                 }, 400);
@@ -870,10 +1000,11 @@
 
         function stopRing() {
             isRinging = false;
-            ringBtn.textContent = 'RING';
-            ringBtn.style.borderColor = 'rgba(0,229,255,0.3)';
-            ringBtn.style.color = '#00e5ff';
 
+            // ---- Hide modal ----
+            ringModal.classList.remove('active');
+
+            // ---- Stop audio ----
             if (ringInterval) {
                 clearInterval(ringInterval);
                 ringInterval = null;
@@ -885,6 +1016,16 @@
                 ringAudioContext = null;
             }
         }
+
+        // ---- Stop ring from modal button ----
+        stopRingBtn.addEventListener('click', stopRing);
+
+        // ---- Close modal on backdrop click ----
+        ringModal.addEventListener('click', (e) => {
+            if (e.target === ringModal) {
+                stopRing();
+            }
+        });
 
         // ================================================================
         //  KILL SWITCH — erases all user data
@@ -972,7 +1113,24 @@
                 (pos) => {
                     lastKnownLat = pos.coords.latitude;
                     lastKnownLon = pos.coords.longitude;
-                    updateCurrentMarker(lastKnownLat, lastKnownLon);
+
+                    // Update the current marker with ACCURATE position
+                    if (currentMarker) {
+                        currentMarker.setLatLng([lastKnownLat, lastKnownLon]);
+                    } else {
+                        const icon = createLocationIcon();
+                        currentMarker = L.marker([lastKnownLat, lastKnownLon], { icon }).addTo(map)
+                            .bindPopup('<b>Your Device</b><br>Current location');
+                    }
+
+                    // Zoom to show both devices if phone marker exists
+                    if (phoneMarker) {
+                        const phone = phoneMarker.getLatLng();
+                        const bounds = L.latLngBounds([lastKnownLat, lastKnownLon], [phone.lat, phone.lng]);
+                        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 18 });
+                    } else {
+                        map.setView([lastKnownLat, lastKnownLon], 14, { animate: true });
+                    }
 
                     // If this is the registered device, update phoneLocation in Firebase
                     if (isRegisteredDevice && currentUid && registeredDeviceId) {
@@ -999,8 +1157,8 @@
                     console.warn('Location error:', err.message);
                 }, {
                     enableHighAccuracy: true,
-                    maximumAge: 5000,
-                    timeout: 10000
+                    maximumAge: 2000, // Get fresh location every 2 seconds
+                    timeout: 8000
                 }
             );
         }
