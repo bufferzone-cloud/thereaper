@@ -84,7 +84,7 @@
             letter-spacing: 0.15em;
         }
 
-        /* ---------- STATUS MESSAGE (tiny, floating) ---------- */
+        /* ---------- STATUS MESSAGE ---------- */
         .ui-status {
             position: absolute;
             top: 82px;
@@ -107,25 +107,16 @@
             color: #00e5ff;
             background: rgba(0, 229, 255, 0.08);
         }
-        .ui-status.registered .status-icon {
-            color: #00e5ff;
-        }
         .ui-status.unregistered {
             border-color: #ffcc00;
             color: #ffcc00;
             background: rgba(255, 200, 0, 0.08);
         }
-        .ui-status.unregistered .status-icon {
-            color: #ffcc00;
-        }
-        .ui-status .status-icon {
-            margin-right: 4px;
-        }
 
         /* ---------- DEVICE DETAILS (bottom left) ---------- */
         .ui-details {
             position: absolute;
-            bottom: 24px;
+            bottom: 100px;
             left: 24px;
             background: rgba(0, 0, 0, 0.75);
             backdrop-filter: blur(14px);
@@ -200,35 +191,38 @@
         /* ---------- ACTION BUTTONS (bottom center) ---------- */
         .ui-actions {
             position: absolute;
-            bottom: 24px;
+            bottom: 18px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
-            gap: 10px;
+            gap: 8px;
             flex-wrap: wrap;
             justify-content: center;
             background: rgba(0, 0, 0, 0.65);
             backdrop-filter: blur(12px);
-            padding: 10px 16px;
+            padding: 8px 14px;
             border-radius: 40px;
             border: 1px solid rgba(0, 229, 255, 0.08);
             box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
             max-width: 92%;
         }
         .ui-actions .btn {
-            padding: 8px 18px;
+            padding: 8px 16px;
             background: transparent;
             border: 1px solid rgba(0, 229, 255, 0.25);
             color: #00e5ff;
             font-weight: 700;
-            font-size: clamp(0.6rem, 0.9vw, 0.75rem);
-            letter-spacing: 1.5px;
+            font-size: clamp(0.55rem, 0.8vw, 0.7rem);
+            letter-spacing: 1.2px;
             text-transform: uppercase;
             border-radius: 30px;
             cursor: pointer;
             transition: all 0.25s ease;
             white-space: nowrap;
             background: rgba(0, 229, 255, 0.03);
+            display: flex;
+            align-items: center;
+            gap: 6px;
         }
         .ui-actions .btn:hover {
             background: rgba(0, 229, 255, 0.15);
@@ -245,8 +239,38 @@
             border-color: #00e5ff;
             box-shadow: 0 0 40px rgba(0, 229, 255, 0.15);
         }
+        .ui-actions .btn-danger {
+            border-color: rgba(255, 70, 70, 0.3);
+            color: #ff5555;
+            background: rgba(255, 70, 70, 0.05);
+        }
+        .ui-actions .btn-danger:hover {
+            background: rgba(255, 70, 70, 0.15);
+            border-color: #ff5555;
+            box-shadow: 0 0 30px rgba(255, 70, 70, 0.08);
+        }
+        .ui-actions .btn-call {
+            border-color: rgba(0, 229, 255, 0.3);
+            color: #00e5ff;
+            background: rgba(0, 229, 255, 0.05);
+        }
+        .ui-actions .btn-call:hover {
+            background: rgba(0, 229, 255, 0.15);
+            border-color: #00e5ff;
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.08);
+        }
         .btn.hidden {
             display: none !important;
+        }
+
+        /* ---------- ICONS ---------- */
+        .icon-svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+            display: inline-block;
+            vertical-align: middle;
+            flex-shrink: 0;
         }
 
         /* ---------- RESPONSIVE ---------- */
@@ -264,7 +288,7 @@
                 white-space: nowrap;
             }
             .ui-details {
-                bottom: 80px;
+                bottom: 90px;
                 left: 12px;
                 right: 12px;
                 width: auto;
@@ -279,14 +303,19 @@
             }
             .ui-actions {
                 bottom: 12px;
-                padding: 6px 12px;
-                gap: 6px;
+                padding: 6px 10px;
+                gap: 4px;
                 width: calc(100% - 24px);
             }
             .ui-actions .btn {
-                padding: 5px 12px;
-                font-size: 0.55rem;
+                padding: 4px 10px;
+                font-size: 0.45rem;
                 letter-spacing: 0.5px;
+                gap: 4px;
+            }
+            .icon-svg {
+                width: 12px;
+                height: 12px;
             }
         }
         @media (max-width: 400px) {
@@ -297,8 +326,8 @@
                 grid-template-columns: 1fr;
             }
             .ui-actions .btn {
-                font-size: 0.45rem;
-                padding: 4px 8px;
+                font-size: 0.4rem;
+                padding: 3px 8px;
             }
         }
 
@@ -339,7 +368,6 @@
 
         <!-- STATUS MESSAGE -->
         <div class="ui-status unregistered" id="device-status">
-            <span class="status-icon">⏳</span>
             <span id="status-text">Checking device…</span>
         </div>
 
@@ -351,9 +379,23 @@
         </div>
 
         <!-- ACTION BUTTONS (bottom center) -->
-        <div class="ui-actions">
-            <button class="btn btn-track hidden" id="track-device-btn">📍 TRACK DEVICE</button>
-            <button class="btn" id="logout-btn">LOGOUT</button>
+        <div class="ui-actions" id="action-buttons">
+            <button class="btn btn-track hidden" id="track-device-btn">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                TRACK
+            </button>
+            <button class="btn btn-call hidden" id="ring-device-btn">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                RING
+            </button>
+            <button class="btn btn-danger hidden" id="kill-switch-btn">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+                KILL
+            </button>
+            <button class="btn" id="logout-btn">
+                <svg class="icon-svg" viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+                LOGOUT
+            </button>
         </div>
 
     </div>
@@ -381,7 +423,7 @@
         //  MODULE IMPORTS
         // ================================================================
         import { initializeApp } from "firebase/app";
-        import { getDatabase, ref, get, set, update } from "firebase/database";
+        import { getDatabase, ref, get, set, update, remove } from "firebase/database";
         import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 
         // ================================================================
@@ -408,6 +450,7 @@
         let map = null;
         let phoneMarker = null;
         let currentMarker = null;
+        let pulseCircle = null;
         let routingControl = null;
         let lastKnownLat = 0;
         let lastKnownLon = 0;
@@ -418,11 +461,16 @@
         let registeredDeviceId = null;
         let currentDeviceId = null;
         let deviceDataRef = null;
+        let ringAudioContext = null;
+        let ringInterval = null;
+        let isRinging = false;
 
         // DOM refs
         const statusEl = document.getElementById('device-status');
         const statusText = document.getElementById('status-text');
         const trackBtn = document.getElementById('track-device-btn');
+        const ringBtn = document.getElementById('ring-device-btn');
+        const killBtn = document.getElementById('kill-switch-btn');
         const deviceGrid = document.getElementById('device-details-grid');
         const noDeviceMsg = document.getElementById('no-device-message');
         const logoutBtn = document.getElementById('logout-btn');
@@ -447,6 +495,7 @@
         //  LOGOUT HANDLER
         // ================================================================
         logoutBtn.addEventListener('click', async () => {
+            stopRing();
             if (updateInterval) clearInterval(updateInterval);
             if (locationWatchId) navigator.geolocation.clearWatch(locationWatchId);
             await signOut(auth);
@@ -473,18 +522,24 @@
                     if (registeredId && currentDeviceId && registeredId === currentDeviceId) {
                         isRegisteredDevice = true;
                         statusEl.className = 'ui-status registered';
-                        statusText.textContent = '✓ User is logged in on registered device';
+                        statusText.textContent = '✓ Logged in on registered device';
                         trackBtn.classList.add('hidden');
+                        ringBtn.classList.add('hidden');
+                        killBtn.classList.add('hidden');
                     } else if (registeredId) {
                         isRegisteredDevice = false;
                         statusEl.className = 'ui-status unregistered';
-                        statusText.textContent = '⚠ User logged in on an unregistered device';
+                        statusText.textContent = '⚠ Logged in on unregistered device';
                         trackBtn.classList.remove('hidden');
+                        ringBtn.classList.remove('hidden');
+                        killBtn.classList.remove('hidden');
                     } else {
                         isRegisteredDevice = false;
                         statusEl.className = 'ui-status unregistered';
-                        statusText.textContent = '⚠ No registered device found for this user';
+                        statusText.textContent = '⚠ No registered device found';
                         trackBtn.classList.add('hidden');
+                        ringBtn.classList.add('hidden');
+                        killBtn.classList.add('hidden');
                     }
 
                     // ---- 2. Render device details ----
@@ -512,12 +567,13 @@
                     }
 
                 } else {
-                    // No user data exists
                     noDeviceMsg.classList.remove('hidden');
                     deviceGrid.innerHTML = '';
                     statusEl.className = 'ui-status unregistered';
                     statusText.textContent = '⚠ No device data found';
                     trackBtn.classList.add('hidden');
+                    ringBtn.classList.add('hidden');
+                    killBtn.classList.add('hidden');
                 }
 
             } catch (err) {
@@ -525,6 +581,8 @@
                 statusEl.className = 'ui-status unregistered';
                 statusText.textContent = '⚠ Error loading device data';
                 trackBtn.classList.add('hidden');
+                ringBtn.classList.add('hidden');
+                killBtn.classList.add('hidden');
             }
         }
 
@@ -563,6 +621,35 @@
         }
 
         // ================================================================
+        //  PROFESSIONAL ICONS (SVG)
+        // ================================================================
+        function createPhoneIcon() {
+            return L.divIcon({
+                className: 'custom-phone-icon',
+                html: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="5" y="2" width="14" height="20" rx="3" stroke="#00e5ff" stroke-width="2" fill="rgba(0,229,255,0.15)"/>
+                        <rect x="9" y="18" width="6" height="2" rx="1" fill="#00e5ff"/>
+                        <path d="M15 6L9 6" stroke="#00e5ff" stroke-width="1.5" stroke-linecap="round"/>
+                        <path d="M15 8L9 8" stroke="#00e5ff" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>`,
+                iconSize: [28, 28],
+                iconAnchor: [14, 28]
+            });
+        }
+
+        function createLocationIcon() {
+            return L.divIcon({
+                className: 'custom-location-icon',
+                html: `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z" stroke="#ffcc00" stroke-width="2" fill="rgba(255,200,0,0.15)"/>
+                        <circle cx="12" cy="9" r="3" stroke="#ffcc00" stroke-width="1.5" fill="rgba(255,200,0,0.25)"/>
+                    </svg>`,
+                iconSize: [28, 28],
+                iconAnchor: [14, 28]
+            });
+        }
+
+        // ================================================================
         //  UPDATE PHONE MARKER (📱)
         // ================================================================
         function updatePhoneMarker(lat, lon) {
@@ -572,19 +659,44 @@
             }
             if (phoneMarker) {
                 phoneMarker.setLatLng([lat, lon]);
+                if (pulseCircle) {
+                    pulseCircle.setLatLng([lat, lon]);
+                }
             } else {
-                const icon = L.divIcon({
-                    html: '📱',
-                    iconSize: [28, 28],
-                    iconAnchor: [14, 28]
-                });
+                const icon = createPhoneIcon();
                 phoneMarker = L.marker([lat, lon], { icon }).addTo(map)
-                    .bindPopup('<b>Registered Phone</b><br>Last known location');
+                    .bindPopup('<b>Registered Device</b><br>Phone location');
+
+                // ---- Create pulsing blue circle (50% opacity) ----
+                pulseCircle = L.circle([lat, lon], {
+                    radius: 200,
+                    color: '#00e5ff',
+                    fillColor: '#00e5ff',
+                    fillOpacity: 0.5,
+                    opacity: 0.4,
+                    weight: 2,
+                    className: 'pulse-circle'
+                }).addTo(map);
+
+                // ---- Animate pulse ----
+                let pulsePhase = 0;
+                setInterval(() => {
+                    if (pulseCircle) {
+                        pulsePhase += 0.02;
+                        const scale = 1 + 0.15 * Math.sin(pulsePhase);
+                        const currentRadius = 200 * scale;
+                        const currentOpacity = 0.3 + 0.2 * Math.sin(pulsePhase + 0.5);
+                        pulseCircle.setRadius(currentRadius);
+                        pulseCircle.setStyle({ fillOpacity: currentOpacity });
+                    }
+                }, 100);
             }
+
+            // ---- Zoom in to show both points ----
             if (currentMarker) {
                 const cur = currentMarker.getLatLng();
                 const bounds = L.latLngBounds([cur.lat, cur.lng], [lat, lon]);
-                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+                map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
             } else {
                 map.setView([lat, lon], 14, { animate: true });
             }
@@ -601,18 +713,14 @@
             if (currentMarker) {
                 currentMarker.setLatLng([lat, lon]);
             } else {
-                const icon = L.divIcon({
-                    html: '📍',
-                    iconSize: [28, 28],
-                    iconAnchor: [14, 28]
-                });
+                const icon = createLocationIcon();
                 currentMarker = L.marker([lat, lon], { icon }).addTo(map)
-                    .bindPopup('<b>You are here</b><br>Current device location');
+                    .bindPopup('<b>Your Device</b><br>Current location');
             }
             if (phoneMarker) {
                 const phone = phoneMarker.getLatLng();
                 const bounds = L.latLngBounds([lat, lon], [phone.lat, phone.lng]);
-                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+                map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
             } else {
                 map.setView([lat, lon], 14, { animate: true });
             }
@@ -666,7 +774,7 @@
 
             // Zoom to fit both points
             const bounds = L.latLngBounds([currentLoc.lat, currentLoc.lon], [phoneLoc.lat, phoneLoc.lon]);
-            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 13 });
 
             // Attempt to draw a route
             const waypoints = [
@@ -686,17 +794,170 @@
                         serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1'
                     }),
                     createMarker: function(i, waypoint, n) {
-                        return null; // Don't create extra markers
+                        return null;
                     }
                 }).addTo(map);
 
                 routingControl.on('routingerror', function(e) {
                     console.warn('Routing error:', e.error);
-                    // Map is already zoomed to both points
                 });
 
             } catch (err) {
                 console.warn('Error creating routing control:', err);
+            }
+        });
+
+        // ================================================================
+        //  RING DEVICE — plays a ringtone using Web Audio API
+        // ================================================================
+        ringBtn.addEventListener('click', () => {
+            if (isRinging) {
+                stopRing();
+                return;
+            }
+            startRing();
+        });
+
+        function startRing() {
+            if (isRinging) return;
+            isRinging = true;
+            ringBtn.textContent = 'STOP';
+            ringBtn.style.borderColor = '#ff5555';
+            ringBtn.style.color = '#ff5555';
+
+            try {
+                ringAudioContext = new(window.AudioContext || window.webkitAudioContext)();
+
+                // ---- Ringtone pattern: 0.4 sec on, 0.2 sec off, repeat ----
+                let noteIndex = 0;
+                const notes = [800, 1000, 800, 1000, 800, 1000];
+                let notePosition = 0;
+
+                ringInterval = setInterval(() => {
+                    if (!ringAudioContext) {
+                        stopRing();
+                        return;
+                    }
+
+                    try {
+                        // Play a note
+                        const osc = ringAudioContext.createOscillator();
+                        const gain = ringAudioContext.createGain();
+                        const now = ringAudioContext.currentTime;
+
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(notes[noteIndex % notes.length], now);
+                        gain.gain.setValueAtTime(0.3, now);
+                        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+                        osc.connect(gain);
+                        gain.connect(ringAudioContext.destination);
+                        osc.start(now);
+                        osc.stop(now + 0.35);
+
+                        noteIndex++;
+                        notePosition = (notePosition + 0.4) % 1.2;
+
+                    } catch (_) { /* silent */ }
+                }, 400);
+
+            } catch (err) {
+                console.error('Ring error:', err);
+                alert('Could not play ringtone. Audio context may be blocked.');
+                stopRing();
+            }
+        }
+
+        function stopRing() {
+            isRinging = false;
+            ringBtn.textContent = 'RING';
+            ringBtn.style.borderColor = 'rgba(0,229,255,0.3)';
+            ringBtn.style.color = '#00e5ff';
+
+            if (ringInterval) {
+                clearInterval(ringInterval);
+                ringInterval = null;
+            }
+            if (ringAudioContext) {
+                try {
+                    ringAudioContext.close();
+                } catch (_) {}
+                ringAudioContext = null;
+            }
+        }
+
+        // ================================================================
+        //  KILL SWITCH — erases all user data
+        // ================================================================
+        killBtn.addEventListener('click', async () => {
+            if (!currentUid) {
+                alert('No user session found.');
+                return;
+            }
+
+            const confirmMsg = '⚠️ DANGER: This will permanently erase all your data from The Reaper.\n\n' +
+                'This includes:\n' +
+                '• Device registration\n' +
+                '• Location history\n' +
+                '• All user data\n\n' +
+                'This action cannot be undone. Are you sure?';
+
+            if (!confirm(confirmMsg)) return;
+
+            const doubleConfirm = 'FINAL WARNING: Type "ERASE" to confirm.';
+            if (prompt(doubleConfirm) !== 'ERASE') {
+                alert('Kill switch cancelled.');
+                return;
+            }
+
+            try {
+                // Stop ring if playing
+                stopRing();
+
+                // Delete all user data from Firebase
+                const userRef = ref(database, 'users/' + currentUid);
+                await remove(userRef);
+
+                // Clear local storage
+                localStorage.removeItem('reaper_device_id');
+
+                // Clear map markers
+                if (phoneMarker) {
+                    map.removeLayer(phoneMarker);
+                    phoneMarker = null;
+                }
+                if (currentMarker) {
+                    map.removeLayer(currentMarker);
+                    currentMarker = null;
+                }
+                if (pulseCircle) {
+                    map.removeLayer(pulseCircle);
+                    pulseCircle = null;
+                }
+                if (routingControl) {
+                    map.removeControl(routingControl);
+                    routingControl = null;
+                }
+
+                // Clear UI
+                deviceGrid.innerHTML = '';
+                noDeviceMsg.classList.remove('hidden');
+                statusEl.className = 'ui-status unregistered';
+                statusText.textContent = '⚠ Data erased — device killed';
+
+                trackBtn.classList.add('hidden');
+                ringBtn.classList.add('hidden');
+                killBtn.classList.add('hidden');
+
+                alert('✅ All data has been erased from The Reaper.\n\nYou will be logged out now.');
+
+                // Log out
+                await signOut(auth);
+                window.location.href = 'index.html';
+
+            } catch (err) {
+                console.error('Kill switch error:', err);
+                alert('Error erasing data. Please try again.');
             }
         });
 
