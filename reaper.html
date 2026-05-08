@@ -65,6 +65,28 @@
             font-weight: 700;
         }
 
+        #device-status {
+            width: 100%;
+            max-width: 900px;
+            text-align: center;
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: clamp(0.8rem, 1.2vw, 1rem);
+            letter-spacing: 1px;
+        }
+        #device-status.registered {
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            color: #00e5ff;
+            background: rgba(0, 229, 255, 0.05);
+        }
+        #device-status.other {
+            border: 1px solid rgba(255, 200, 0, 0.3);
+            color: #ffcc00;
+            background: rgba(255, 200, 0, 0.05);
+        }
+
         #map-container {
             width: 100%;
             max-width: 900px;
@@ -174,6 +196,9 @@
             background: rgba(255, 70, 70, 0.12);
             border-color: #ff5555;
             box-shadow: 0 0 20px rgba(255, 70, 70, 0.15);
+        }
+        .action-btn.hidden {
+            display: none !important;
         }
 
         .modal-overlay {
@@ -366,6 +391,10 @@
         <p>Hi <strong id="user-name-display">User</strong>, welcome to the reaper</p>
     </div>
 
+    <div id="device-status" class="registered">
+        <span id="status-text">✓ This is your registered device (phone) — location updates every 10 seconds</span>
+    </div>
+
     <div id="map-container">
         <div id="map"></div>
     </div>
@@ -486,8 +515,8 @@
         let registeredDeviceId = null;
         let deviceDataRef = null;
         let map = null;
-        let phoneMarker = null; // marker for registered device (phone)
-        let currentMarker = null; // marker for current device (laptop)
+        let phoneMarker = null;
+        let currentMarker = null;
         let routingControl = null;
         let collectedDeviceData = {};
         let lastKnownLat = 0;
@@ -495,6 +524,7 @@
         let updateInterval = null;
         let wizardStep = 1;
         let wizardData = {};
+        let isRegisteredDevice = false;
 
         const userNameDisplay = document.getElementById('user-name-display');
         const deviceGrid = document.getElementById('device-details-grid');
@@ -503,6 +533,8 @@
         const deleteBtn = document.getElementById('delete-device-btn');
         const trackBtn = document.getElementById('track-device-btn');
         const wizardModal = document.getElementById('wizard-modal');
+        const statusEl = document.getElementById('device-status');
+        const statusText = document.getElementById('status-text');
 
         // ---------- AUTH ----------
         function showLoginRedirect() {
@@ -545,6 +577,8 @@
                         registeredDeviceId = null;
                         deviceDataRef = null;
                         setupBtn.textContent = 'CONTINUE DEVICE SETUP';
+                        statusEl.className = 'registered';
+                        statusText.textContent = '⚠ No registered device yet. Please set one up.';
                     }
                 } else {
                     noDeviceMsg.classList.remove('hidden');
@@ -552,6 +586,8 @@
                     registeredDeviceId = null;
                     deviceDataRef = null;
                     setupBtn.textContent = 'CONTINUE DEVICE SETUP';
+                    statusEl.className = 'registered';
+                    statusText.textContent = '⚠ No registered device yet. Please set one up.';
                 }
             } catch (err) {
                 console.error('Error loading user device:', err);
@@ -567,26 +603,33 @@
                     wizardData = data;
                     renderDeviceDetails(data.deviceDetails || {});
                     
-                    // Registered device's fixed location (phone)
+                    // Check if this is the registered device (phone) or a different device
+                    const storedDeviceId = localStorage.getItem('reaper_device_id');
+                    const registeredDeviceIdFromDB = data.mei || '';
+                    
+                    if (storedDeviceId && registeredDeviceIdFromDB && storedDeviceId === registeredDeviceIdFromDB) {
+                        isRegisteredDevice = true;
+                        statusEl.className = 'registered';
+                        statusText.textContent = '✓ This is your registered device (phone) — location updates every 10 seconds';
+                        trackBtn.classList.add('hidden');
+                    } else {
+                        isRegisteredDevice = false;
+                        statusEl.className = 'other';
+                        statusText.textContent = '⚠ This is not your registered device. You are viewing the phone\'s location.';
+                        trackBtn.classList.remove('hidden');
+                    }
+
+                    // Phone location (fixed for registered device, but updated every 10s by the phone)
                     const phoneLoc = data.phoneLocation || { lat: 0, lon: 0 };
                     updatePhoneMarker(phoneLoc.lat, phoneLoc.lon);
 
-                    // Try to load current location (laptop) from separate path
-                    const currentLocRef = ref(database, 'users/' + currentUid + '/currentLocation');
-                    const currentSnap = await get(currentLocRef);
-                    if (currentSnap.exists()) {
-                        const curLoc = currentSnap.val();
-                        updateCurrentMarker(curLoc.lat, curLoc.lon);
-                    } else {
-                        // fallback to last known
-                        if (lastKnownLat && lastKnownLon) {
-                            updateCurrentMarker(lastKnownLat, lastKnownLon);
-                        }
+                    // Current device location (only for this session)
+                    if (lastKnownLat && lastKnownLon) {
+                        updateCurrentMarker(lastKnownLat, lastKnownLon);
                     }
 
                     noDeviceMsg.classList.add('hidden');
                     deviceGrid.classList.remove('hidden');
-                    setupBtn.textContent = 'UPDATE DEVICE SETUP';
                 } else {
                     noDeviceMsg.classList.remove('hidden');
                     deviceGrid.innerHTML = '';
@@ -643,7 +686,7 @@
                     iconAnchor: [15, 30]
                 });
                 phoneMarker = L.marker([lat, lon], { icon: phoneIcon }).addTo(map)
-                    .bindPopup('<b>Registered Device</b><br>Phone location');
+                    .bindPopup('<b>Registered Device (Phone)</b><br>Last known location');
             }
             if (!map.getBounds().contains([lat, lon])) {
                 map.setView([lat, lon], map.getZoom(), { animate: true });
@@ -665,7 +708,7 @@
                     iconAnchor: [15, 30]
                 });
                 currentMarker = L.marker([lat, lon], { icon: userIcon }).addTo(map)
-                    .bindPopup('<b>Your Current Device</b><br>Laptop / Tablet location');
+                    .bindPopup('<b>Your Current Device</b><br>' + (isRegisteredDevice ? 'This is your phone' : 'You are viewing from this device'));
             }
         }
 
@@ -698,12 +741,10 @@
                 alert('Missing location data for either the registered device or your current device.');
                 return;
             }
-            // Clear existing route
             if (routingControl) {
                 map.removeControl(routingControl);
                 routingControl = null;
             }
-            // Build route using Leaflet Routing Machine
             const waypoints = [
                 L.latLng(currentLoc.lat, currentLoc.lon),
                 L.latLng(phoneLoc.lat, phoneLoc.lon)
@@ -730,7 +771,16 @@
                     lastKnownLat = pos.coords.latitude;
                     lastKnownLon = pos.coords.longitude;
                     updateCurrentMarker(lastKnownLat, lastKnownLon);
-                    // Also save current location to Firebase (for other devices to see)
+                    // If this is the registered device, update phoneLocation in Firebase
+                    if (isRegisteredDevice && currentUid && deviceDataRef) {
+                        const phoneLocRef = ref(database, 'users/' + currentUid + '/registeredDevices/' + registeredDeviceId + '/phoneLocation');
+                        set(phoneLocRef, {
+                            lat: lastKnownLat,
+                            lon: lastKnownLon,
+                            timestamp: new Date().toISOString()
+                        }).catch(() => {});
+                    }
+                    // Also save current location for other devices to see
                     if (currentUid) {
                         const curLocRef = ref(database, 'users/' + currentUid + '/currentLocation');
                         set(curLocRef, {
@@ -810,27 +860,25 @@
             };
         }
 
-        // ---------- PERIODIC UPDATES (only current location & device info) ----------
+        // ---------- PERIODIC UPDATES ----------
         function startPeriodicUpdates() {
             if (updateInterval) clearInterval(updateInterval);
             updateInterval = setInterval(async () => {
-                if (!currentUid) return;
-                // Update current device location (already being done in watchPosition)
-                // Also update the registered device's deviceDetails (but keep phoneLocation fixed)
-                if (registeredDeviceId && deviceDataRef) {
-                    if (Object.keys(collectedDeviceData).length === 0) {
-                        collectedDeviceData = collectDeviceInfo();
-                    }
-                    try {
-                        // Only update details, NOT location
-                        await update(deviceDataRef, {
-                            deviceDetails: collectedDeviceData,
-                            lastUpdated: new Date().toISOString()
-                        });
-                    } catch (err) {
-                        // silent
-                    }
+                if (!currentUid || !registeredDeviceId || !deviceDataRef) return;
+                
+                // Update deviceDetails periodically
+                if (Object.keys(collectedDeviceData).length === 0) {
+                    collectedDeviceData = collectDeviceInfo();
                 }
+                try {
+                    await update(deviceDataRef, {
+                        deviceDetails: collectedDeviceData,
+                        lastUpdated: new Date().toISOString()
+                    });
+                } catch (err) {
+                    // silent
+                }
+
                 // Update user's lastSeen
                 try {
                     const userRef = ref(database, 'users/' + currentUid);
@@ -852,6 +900,7 @@
                     map.removeLayer(phoneMarker);
                     phoneMarker = null;
                 }
+                localStorage.removeItem('reaper_device_id');
                 registeredDeviceId = null;
                 deviceDataRef = null;
                 noDeviceMsg.classList.remove('hidden');
@@ -861,6 +910,9 @@
                     map.removeControl(routingControl);
                     routingControl = null;
                 }
+                trackBtn.classList.add('hidden');
+                statusEl.className = 'registered';
+                statusText.textContent = '⚠ Device deleted. Please set up a new one.';
                 alert('Device deleted successfully.');
             } catch (err) {
                 console.error('Delete error:', err);
@@ -943,7 +995,6 @@
                     alt: document.getElementById('wiz-alt').value.trim()
                 },
                 deviceDetails: collectDeviceInfo(),
-                // Store phone location separately (fixed at registration)
                 phoneLocation: {
                     lat: lastKnownLat || 0,
                     lon: lastKnownLon || 0,
@@ -957,6 +1008,10 @@
                 const deviceRef = ref(database, 'users/' + currentUid + '/registeredDevices/' + deviceId);
                 await set(deviceRef, deviceData);
                 await update(ref(database, 'users/' + currentUid), { registeredDeviceId: deviceId });
+                
+                // Store device ID in localStorage so this device knows it's the registered one
+                localStorage.setItem('reaper_device_id', mei);
+                
                 // Also save current location separately
                 if (lastKnownLat && lastKnownLon) {
                     const curLocRef = ref(database, 'users/' + currentUid + '/currentLocation');
@@ -966,10 +1021,15 @@
                         timestamp: new Date().toISOString()
                     });
                 }
+                
                 registeredDeviceId = deviceId;
                 deviceDataRef = deviceRef;
                 wizardData = deviceData;
                 wizardModal.classList.add('hidden');
+                
+                // Reload device data to reflect registration
+                await loadDeviceData();
+                
                 renderDeviceDetails(deviceData.deviceDetails);
                 noDeviceMsg.classList.add('hidden');
                 deviceGrid.classList.remove('hidden');
@@ -980,7 +1040,14 @@
                     map.removeControl(routingControl);
                     routingControl = null;
                 }
-                alert('Device registered successfully!');
+                
+                // Now this device is the registered one, so hide track button
+                isRegisteredDevice = true;
+                statusEl.className = 'registered';
+                statusText.textContent = '✓ This is your registered device (phone) — location updates every 10 seconds';
+                trackBtn.classList.add('hidden');
+                
+                alert('Device registered successfully! This device will now update its location every 10 seconds.');
             } catch (err) {
                 console.error('Save error:', err);
                 alert('Error registering device. Please try again.');
