@@ -1,652 +1,752 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Reaper - Tech Tracking</title>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
-<style>
-    * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Rajdhani', sans-serif; }
-    body {
-        background: #000000;
-        color: #fff;
-        height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        position: relative;
-    }
-    body::before {
-        content: '';
-        position: absolute;
-        top: 0; left: 0; width: 100%; height: 100%;
-        background-image: 
-            linear-gradient(rgba(0, 229, 255, 0.04) 1px, transparent 1px),
-            linear-gradient(90deg, rgba(0, 229, 255, 0.04) 1px, transparent 1px);
-        background-size: 40px 40px;
-        z-index: -1;
-    }
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
+    <title>The Reaper</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet" />
+    <style>
+        /* --- RESET & ULTRA RESPONSIVE BASE --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Rajdhani', sans-serif;
+        }
+        html,
+        body {
+            width: 100%;
+            min-height: 100vh;
+            background: #000000;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image:
+                linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+            background-size: clamp(30px, 5vw, 50px) clamp(30px, 5vw, 50px);
+            z-index: -1;
+            pointer-events: none;
+        }
 
-    .page-container {
-        width: 100%;
-        max-width: 580px;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        padding: 20px;
-        position: relative;
-    }
+        /* --- RESPONSIVE CONTAINER (no fixed width) --- */
+        .container {
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+            border: 1px solid rgba(0, 229, 255, 0.15);
+            border-radius: 20px;
+            width: 92%;
+            max-width: 540px;
+            padding: clamp(24px, 4vw, 44px) clamp(20px, 3vw, 40px) clamp(28px, 4vw, 48px);
+            box-shadow: 0 0 60px rgba(0, 229, 255, 0.15), inset 0 0 60px rgba(0, 229, 255, 0.02);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s ease;
+            margin: 16px auto;
+        }
+        .container::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(0, 229, 255, 0.05) 0%, transparent 70%);
+            z-index: -1;
+            pointer-events: none;
+        }
 
-    .page {
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        width: 100%;
-        animation: fadeIn 0.5s ease;
-    }
-    .page.active { display: flex; }
+        /* --- LOGO — HUGE + BLENDED + RESPONSIVE --- */
+        .logo-container {
+            text-align: center;
+            margin-bottom: clamp(8px, 1.5vh, 18px);
+        }
+        .logo-container img {
+            width: auto;
+            height: clamp(140px, 28vw, 300px);
+            max-height: 38vh;
+            /* blend into dark background — no glow, no lighting */
+            mix-blend-mode: screen;
+            display: block;
+            margin: 0 auto;
+            transition: transform 0.4s ease;
+            filter: none !important;
+            object-fit: contain;
+        }
+        .logo-container img:hover {
+            transform: scale(1.04);
+        }
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+        /* --- TYPOGRAPHY --- */
+        h1,
+        h2 {
+            font-family: 'Orbitron', sans-serif;
+            text-align: center;
+            letter-spacing: 0.08em;
+        }
+        h1 {
+            font-size: clamp(1.4rem, 4vw, 2.2rem);
+            background: linear-gradient(90deg, #00e5ff, #0077ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 2px;
+            line-height: 1.2;
+        }
+        h2 {
+            font-size: clamp(0.7rem, 1.5vw, 1rem);
+            color: #888;
+            -webkit-text-fill-color: #888;
+            letter-spacing: 0.2em;
+            font-weight: 400;
+            margin-bottom: clamp(12px, 2vh, 22px);
+        }
 
-    /* ===== LOGO BLENDING (Massive, deep black) ===== */
-    .logo-mega {
-        width: 65%;
-        max-width: 280px;
-        margin: 0 auto 15px;
-        mix-blend-mode: screen; /* Blends logo into background */
-        filter: drop-shadow(0 0 25px rgba(0, 229, 255, 0.15));
-        display: block;
-        transition: 0.3s ease;
-    }
-    .logo-mega:hover { transform: scale(1.03); }
+        /* --- PAGE SECTIONS (no forms) --- */
+        .page-section {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+        .field {
+            margin-bottom: clamp(10px, 1.6vh, 18px);
+            width: 100%;
+        }
+        .field label {
+            display: block;
+            color: #aaa;
+            font-size: clamp(0.65rem, 1vw, 0.75rem);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 3px;
+        }
+        .field .value-display {
+            width: 100%;
+            padding: clamp(10px, 1.2vw, 14px) clamp(12px, 2vw, 16px);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            color: #fff;
+            font-size: clamp(0.85rem, 1.2vw, 1rem);
+            transition: border 0.3s, background 0.3s;
+            outline: none;
+        }
+        .field .value-display:focus {
+            border-color: #00e5ff;
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .field .value-display::placeholder {
+            color: #444;
+            font-size: 0.9em;
+        }
 
-    .reaper-title {
-        font-family: 'Orbitron', sans-serif;
-        font-size: 2.8rem;
-        background: linear-gradient(90deg, #00e5ff, #0077ff);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        letter-spacing: 5px;
-        margin-bottom: 5px;
-    }
-    .reaper-sub {
-        color: #666;
-        letter-spacing: 8px;
-        text-transform: uppercase;
-        font-size: 0.8rem;
-        margin-bottom: 20px;
-    }
+        /* --- BUTTONS --- */
+        .btn-primary {
+            width: 100%;
+            padding: clamp(12px, 1.6vh, 16px);
+            background: transparent;
+            border: 1px solid #00e5ff;
+            color: #00e5ff;
+            font-weight: 700;
+            font-size: clamp(0.85rem, 1.2vw, 1rem);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 4px;
+        }
+        .btn-primary:hover {
+            background: #00e5ff;
+            color: #0a0a0a;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+        }
+        .btn-primary:active {
+            transform: scale(0.97);
+        }
 
-    /* ===== CARDS ===== */
-    .card {
-        background: rgba(0, 0, 0, 0.7);
-        backdrop-filter: blur(8px);
-        border: 1px solid rgba(0, 229, 255, 0.12);
-        border-radius: 16px;
-        padding: 28px 25px;
-        width: 100%;
-        box-shadow: 0 0 30px rgba(0, 229, 255, 0.08);
-    }
+        .bottom-link {
+            text-align: center;
+            margin-top: clamp(14px, 2vh, 22px);
+            color: #666;
+            font-size: clamp(0.8rem, 1vw, 0.9rem);
+        }
+        .bottom-link a {
+            color: #00e5ff;
+            text-decoration: none;
+            font-weight: 600;
+            cursor: pointer;
+            border-bottom: 1px solid transparent;
+            transition: border 0.3s;
+        }
+        .bottom-link a:hover {
+            border-bottom-color: #00e5ff;
+        }
 
-    .card-title {
-        font-family: 'Orbitron', sans-serif;
-        color: #00e5ff;
-        text-align: center;
-        letter-spacing: 3px;
-        font-size: 1.2rem;
-        margin-bottom: 15px;
-        text-transform: uppercase;
-    }
+        /* --- DEVICE GRID (fully responsive) --- */
+        .device-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(min(140px, 45%), 1fr));
+            gap: clamp(6px, 1vw, 10px);
+            margin: 10px 0 12px;
+            max-height: clamp(180px, 40vh, 320px);
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+        .device-grid::-webkit-scrollbar {
+            width: 4px;
+        }
+        .device-grid::-webkit-scrollbar-track {
+            background: #111;
+            border-radius: 5px;
+        }
+        .device-grid::-webkit-scrollbar-thumb {
+            background: #00e5ff;
+            border-radius: 5px;
+        }
+        .device-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            padding: clamp(8px, 1vw, 12px);
+            border-radius: 8px;
+            font-size: clamp(0.6rem, 1vw, 0.75rem);
+            word-break: break-word;
+        }
+        .device-card .label {
+            color: #00e5ff;
+            font-weight: 600;
+            display: block;
+            font-size: clamp(0.55rem, 0.8vw, 0.65rem);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+        .device-card .value {
+            color: #ddd;
+            word-break: break-word;
+            font-size: clamp(0.6rem, 0.9vw, 0.8rem);
+        }
 
-    /* ===== INPUTS ===== */
-    .input-group { margin-bottom: 16px; text-align: left; }
-    .input-group label {
-        color: #aaa;
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        display: block;
-        margin-bottom: 4px;
-    }
-    .input-group input {
-        width: 100%;
-        padding: 12px 15px;
-        background: rgba(255,255,255,0.05);
-        border: 1px solid rgba(255,255,255,0.08);
-        border-radius: 8px;
-        color: #fff;
-        font-size: 1rem;
-        outline: none;
-        transition: 0.3s;
-    }
-    .input-group input:focus { border-color: #00e5ff; box-shadow: 0 0 15px rgba(0, 229, 255, 0.15); }
+        /* --- SCANNER LINE --- */
+        .scanner-line {
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #00e5ff, transparent);
+            position: relative;
+            animation: scan 2s infinite linear;
+            margin-bottom: 8px;
+            opacity: 0.7;
+        }
+        @keyframes scan {
+            0% {
+                top: 0;
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                top: 100%;
+                opacity: 0;
+            }
+        }
 
-    /* ===== BUTTONS ===== */
-    .btn-primary {
-        width: 100%;
-        padding: 14px;
-        background: transparent;
-        border: 1px solid #00e5ff;
-        color: #00e5ff;
-        font-weight: 700;
-        font-size: 1rem;
-        letter-spacing: 3px;
-        text-transform: uppercase;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        margin-top: 5px;
-    }
-    .btn-primary:hover {
-        background: #00e5ff;
-        color: #000;
-        box-shadow: 0 0 30px rgba(0, 229, 255, 0.3);
-    }
-    .btn-secondary {
-        background: rgba(0, 229, 255, 0.08);
-        border: 1px solid rgba(0, 229, 255, 0.2);
-    }
-    .btn-secondary:hover {
-        background: rgba(0, 229, 255, 0.2);
-    }
+        /* --- IP & STATUS DISPLAY --- */
+        .ip-box {
+            background: rgba(255, 255, 255, 0.05);
+            padding: clamp(8px, 1vw, 12px);
+            border-radius: 6px;
+            text-align: center;
+            color: #aaa;
+            font-size: clamp(0.75rem, 1vw, 0.9rem);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+        }
+        .ip-box span {
+            color: #00e5ff;
+        }
 
-    .bottom-link {
-        text-align: center;
-        margin-top: 15px;
-        color: #888;
-        font-size: 0.9rem;
-    }
-    .bottom-link a {
-        color: #00e5ff;
-        text-decoration: none;
-        font-weight: bold;
-        cursor: pointer;
-        transition: 0.3s;
-    }
-    .bottom-link a:hover { text-shadow: 0 0 12px #00e5ff; }
+        /* --- SCAN FOOTER (2 columns) --- */
+        .scan-footer {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: clamp(8px, 1.2vw, 14px);
+            margin-top: 6px;
+        }
+        .scan-footer .field {
+            margin: 0;
+        }
 
-    /* ===== DEVICE GRID ===== */
-    .device-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
-        max-height: 320px;
-        overflow-y: auto;
-        padding-right: 5px;
-        margin: 5px 0 15px;
-    }
-    .device-grid::-webkit-scrollbar { width: 5px; }
-    .device-grid::-webkit-scrollbar-track { background: #111; }
-    .device-grid::-webkit-scrollbar-thumb { background: #00e5ff; border-radius: 4px; }
+        /* --- MODAL (fully responsive) --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(5px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            padding: 16px;
+        }
+        .modal-box {
+            background: #0a0a0a;
+            border: 1px solid #00e5ff;
+            padding: clamp(20px, 4vw, 34px);
+            max-width: 94%;
+            width: 440px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(0, 229, 255, 0.15);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-box p {
+            margin: 12px 0;
+            color: #ccc;
+            font-size: clamp(0.85rem, 1.1vw, 1rem);
+        }
+        .modal-buttons {
+            display: flex;
+            gap: clamp(10px, 2vw, 16px);
+            justify-content: center;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+        .btn-small {
+            padding: clamp(8px, 1.2vw, 12px) clamp(16px, 2.5vw, 26px);
+            border-radius: 5px;
+            font-size: clamp(0.75rem, 1vw, 0.85rem);
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            border: none;
+            min-width: 100px;
+        }
+        .btn-confirm {
+            background: #00e5ff;
+            color: #000;
+        }
+        .btn-cancel {
+            background: #333;
+            color: #aaa;
+        }
 
-    .device-item {
-        background: rgba(255,255,255,0.03);
-        padding: 8px 10px;
-        border-radius: 6px;
-        border: 1px solid rgba(255,255,255,0.04);
-    }
-    .device-item .lbl { color: #00e5ff; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 1px; }
-    .device-item .val { color: #ddd; font-size: 0.85rem; font-weight: 400; }
+        .hidden {
+            display: none !important;
+        }
 
-    /* ===== SCAN LINE ===== */
-    .scanner-bar {
-        width: 100%;
-        height: 2px;
-        background: linear-gradient(90deg, transparent, #00e5ff, transparent);
-        animation: scan 2s infinite linear;
-        margin: 10px 0 15px;
-    }
-    @keyframes scan {
-        0% { transform: translateX(-100%); }
-        100% { transform: translateX(100%); }
-    }
-
-    /* ===== MODAL ===== */
-    .modal-overlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(0,0,0,0.92);
-        backdrop-filter: blur(6px);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 999;
-    }
-    .modal-box {
-        background: #0a0a0a;
-        border: 1px solid #00e5ff;
-        padding: 30px;
-        max-width: 420px;
-        width: 90%;
-        border-radius: 16px;
-        box-shadow: 0 0 50px rgba(0,229,255,0.1);
-    }
-    .modal-box h3 { font-family: 'Orbitron'; color: #00e5ff; margin-bottom: 12px; text-align: center; }
-    .modal-box p { color: #ccc; margin-bottom: 12px; font-size: 0.9rem; }
-    .modal-btns { display: flex; gap: 10px; margin-top: 15px; }
-    .btn-modal { flex: 1; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; text-transform: uppercase; font-size: 0.8rem; }
-    .btn-confirm { background: #00e5ff; color: #000; }
-    .btn-cancel { background: #333; color: #aaa; }
-
-    .hidden { display: none !important; }
-</style>
+        /* --- small-screen refinements --- */
+        @media (max-width: 420px) {
+            .container {
+                padding: 16px 14px 20px;
+                border-radius: 14px;
+            }
+            .device-grid {
+                grid-template-columns: 1fr 1fr;
+                max-height: 200px;
+            }
+            .scan-footer {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+            .logo-container img {
+                height: 140px;
+            }
+            .modal-box {
+                padding: 18px 14px;
+            }
+        }
+        @media (max-width: 360px) {
+            .device-grid {
+                grid-template-columns: 1fr;
+            }
+            .logo-container img {
+                height: 110px;
+            }
+        }
+        @media (min-width: 1000px) {
+            .container {
+                padding: 48px 48px 52px;
+                max-width: 580px;
+            }
+            .device-grid {
+                grid-template-columns: 1fr 1fr;
+                max-height: 340px;
+            }
+        }
+    </style>
 </head>
 <body>
 
-<div class="page-container">
+    <div class="container" id="app-container">
 
-    <!-- ===== PAGE 1: LOGIN ===== -->
-    <div id="page-login" class="page active">
-        <img src="reaper.png" alt="The Reaper" class="logo-mega">
-        <div class="reaper-title">THE REAPER</div>
-        <div class="reaper-sub">Tech Tracking System</div>
+        <!-- ===== SCREEN 1 : LOGIN (page) ===== -->
+        <div id="login-screen" class="page-section">
+            <div class="logo-container">
+                <!-- Replace with your actual logo path: reaper.png -->
+                <img src="reaper.png" alt="The Reaper Logo" />
+            </div>
+            <h1>THE REAPER</h1>
+            <h2>Tech Tracking System</h2>
 
-        <div class="card">
-            <form id="loginForm" onsubmit="event.preventDefault(); performLogin();">
-                <div class="input-group">
-                    <label>Email</label>
-                    <input type="email" id="login-email" placeholder="reaper@cybertech.com" required>
-                </div>
-                <div class="input-group">
-                    <label>Password</label>
-                    <input type="password" id="login-pass" placeholder="••••••••" required>
-                </div>
-                <button type="submit" class="btn-primary">SECURE LOGIN</button>
-            </form>
-            <div class="bottom-link">
-                No account? <a onclick="startCreateAccount()">Create Account</a>
+            <div class="field">
+                <label>Email Address</label>
+                <input type="email" id="login-email" class="value-display" placeholder="reaper@cybertech.com" />
             </div>
-        </div>
-    </div>
-
-    <!-- ===== PAGE 2: DEVICE SCAN ===== -->
-    <div id="page-scan" class="page">
-        <img src="reaper.png" class="logo-mega" style="width:45%; max-width:150px; margin-bottom:5px;">
-        <div class="reaper-title" style="font-size:1.8rem;">SCANNING</div>
-        <div class="scanner-bar"></div>
-
-        <div class="card">
-            <div class="card-title" style="font-size:0.9rem; margin-bottom:5px;">🔍 Device Fingerprint</div>
-            <div class="device-grid" id="device-grid">
-                <div style="grid-column:1/-1; text-align:center; color:cyan; padding:15px;">Acquiring system data...</div>
-            </div>
-            <button class="btn-primary btn-secondary" onclick="proceedToRegister()">PROCEED TO REGISTER</button>
-        </div>
-    </div>
-
-    <!-- ===== PAGE 3: REGISTRATION ===== -->
-    <div id="page-register" class="page">
-        <img src="reaper.png" class="logo-mega" style="width:40%; max-width:120px; margin-bottom:5px;">
-        <div class="reaper-title" style="font-size:1.6rem;">REGISTER</div>
-
-        <div class="card">
-            <div class="input-group">
-                <label>Full Name</label>
-                <input type="text" id="reg-name" placeholder="John Doe" required>
-            </div>
-            <div class="input-group">
-                <label>Email</label>
-                <input type="email" id="reg-email" placeholder="john@email.com" required>
-            </div>
-            <div class="input-group">
-                <label>Phone Number</label>
-                <input type="tel" id="reg-phone" placeholder="+1 555 000 000" required>
-            </div>
-            <div class="input-group">
-                <label>Emergency Number</label>
-                <input type="tel" id="reg-emergency-phone" placeholder="Emergency contact">
-            </div>
-            <div class="input-group">
-                <label>Emergency Email</label>
-                <input type="email" id="reg-emergency-email" placeholder="emergency@email.com">
-            </div>
-            <div class="input-group">
+            <div class="field">
                 <label>Password</label>
-                <input type="password" id="reg-pass" placeholder="••••••••" required>
+                <input type="password" id="login-pass" class="value-display" placeholder="••••••••" />
             </div>
-            <button class="btn-primary" onclick="submitRegistration()">CREATE ACCOUNT</button>
-            <div class="bottom-link" style="margin-top:12px;">
-                <a onclick="goBackToLogin()">← Back to Login</a>
+
+            <button class="btn-primary" id="login-btn">SECURE LOGIN</button>
+
+            <div class="bottom-link">
+                <a id="create-account-btn">CREATE ACCOUNT</a>
+            </div>
+        </div>
+
+        <!-- ===== SCREEN 2 : DEVICE SCAN (page) ===== -->
+        <div id="device-scan-screen" class="page-section hidden">
+            <div class="logo-container" style="margin-bottom:4px;">
+                <img src="reaper.png" style="height:clamp(80px,16vw,120px);" alt="The Reaper" />
+            </div>
+            <h2 style="color:#00e5ff; -webkit-text-fill-color:#fff; font-weight:700;">DEVICE SCAN</h2>
+            <div class="scanner-line"></div>
+            <p style="text-align:center; color:#aaa; font-size:clamp(0.75rem,1vw,0.85rem); margin-bottom:6px;">Extracting all technical data …</p>
+
+            <div id="device-data-container">
+                <div class="device-grid" id="device-grid"></div>
+            </div>
+
+            <div class="scan-footer">
+                <div class="field" style="margin:0;">
+                    <label>IP Address</label>
+                    <div class="ip-box" id="ip-display">Fetching …</div>
+                </div>
+                <div class="field" style="margin:0;">
+                    <label>Status</label>
+                    <div class="ip-box" style="color:#00e5ff;">Ready</div>
+                </div>
+            </div>
+
+            <button id="proceed-register-btn" class="btn-primary" style="margin-top:14px;">PROCEED TO REGISTER</button>
+        </div>
+
+        <!-- ===== SCREEN 3 : REGISTRATION (page) ===== -->
+        <div id="register-screen" class="page-section hidden">
+            <div class="logo-container" style="margin-bottom:4px;">
+                <img src="reaper.png" style="height:clamp(80px,16vw,120px);" alt="The Reaper" />
+            </div>
+            <h2 style="color:#00e5ff; -webkit-text-fill-color:#fff; font-weight:700;">REGISTRATION</h2>
+            <p style="text-align:center; color:#aaa; font-size:clamp(0.75rem,1vw,0.85rem); margin-bottom:12px;">Secure your device with The Reaper</p>
+
+            <div class="field">
+                <label>Full Name</label>
+                <input type="text" id="reg-name" class="value-display" placeholder="John Doe" />
+            </div>
+            <div class="field">
+                <label>Email</label>
+                <input type="email" id="reg-email" class="value-display" placeholder="john@email.com" />
+            </div>
+            <div class="field">
+                <label>Phone Number</label>
+                <input type="tel" id="reg-phone" class="value-display" placeholder="+1 555 000 000" />
+            </div>
+            <div class="field">
+                <label>Emergency Number</label>
+                <input type="tel" id="reg-emergency-phone" class="value-display" placeholder="Emergency contact" />
+            </div>
+            <div class="field">
+                <label>Emergency Email</label>
+                <input type="email" id="reg-emergency-email" class="value-display" placeholder="emergency@email.com" />
+            </div>
+            <div class="field">
+                <label>Create Password</label>
+                <input type="password" id="reg-pass" class="value-display" placeholder="Create a strong password" />
+            </div>
+
+            <button class="btn-primary" id="register-btn">CREATE ACCOUNT</button>
+        </div>
+    </div>
+
+    <!-- ===== CONFIRMATION MODAL ===== -->
+    <div id="confirmation-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h2 style="color:#00e5ff; font-family:'Orbitron';">CONFIRM</h2>
+            <div id="modal-content">
+                <p>Verifying your details …</p>
+            </div>
+            <div class="modal-buttons">
+                <button class="btn-small btn-cancel" id="modal-cancel">CANCEL</button>
+                <button class="btn-small btn-confirm" id="modal-confirm">REGISTER DEVICE</button>
             </div>
         </div>
     </div>
 
-</div>
-
-<!-- ===== CONFIRMATION MODAL ===== -->
-<div id="confirmation-modal" class="modal-overlay">
-    <div class="modal-box">
-        <h3>⚡ CONFIRM</h3>
-        <div id="modal-body">
-            <p>Review your details before final registration.</p>
-        </div>
-        <div class="modal-btns">
-            <button class="btn-modal btn-cancel" onclick="closeModal()">CANCEL</button>
-            <button class="btn-modal btn-confirm" onclick="finalizeRegistration()">REGISTER</button>
-        </div>
-    </div>
-</div>
-
-<!-- ===== FIREBASE + LOGIC ===== -->
-<script type="importmap">
-{
-    "imports": {
-        "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
-        "firebase/database": "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js"
-    }
-}
-</script>
-
-<script type="module">
-    import { initializeApp } from "firebase/app";
-    import { getDatabase, ref, push, set } from "firebase/database";
-
-    // ===== FIREBASE CONFIG =====
-    const firebaseConfig = {
-        apiKey: "AIzaSyDye0P37QYNjtRRKh2_At84QCkKCqjceAQ",
-        authDomain: "reaper-7b33d.firebaseapp.com",
-        databaseURL: "https://reaper-7b33d-default-rtdb.firebaseio.com",
-        projectId: "reaper-7b33d",
-        storageBucket: "reaper-7b33d.firebasestorage.app",
-        messagingSenderId: "1023523985110",
-        appId: "1:1023523985110:web:889e2200fad1fa5b98db77",
-        measurementId: "G-NQ8F9TKPVZ"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const database = getDatabase(app);
-
-    // ===== STATE =====
-    let allDeviceData = {};
-    let locationData = { 
-        country: "Pending", 
-        city: "Pending", 
-        area: "Pending", 
-        road: "Pending", 
-        nearby_2km: "Pending" 
-    };
-    let gpsCoords = null;
-    let ipAddress = "Unknown";
-    let regData = {};
-
-    // ===== PAGE CONTROL =====
-    function showPage(id) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
-    }
-
-    // ===== 1. LOGIN =====
-    window.performLogin = function() {
-        const email = document.getElementById('login-email').value;
-        const pass = document.getElementById('login-pass').value;
-        if (email && pass) {
-            alert(`✅ Welcome back, ${email}! (Login simulated)`);
-            // In real implementation, redirect to dashboard
-        } else {
-            alert("Please fill in both fields.");
+    <!-- ===== FIREBASE + APP LOGIC ===== -->
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/12.13.0/firebase-app.js",
+                "firebase/database": "https://www.gstatic.com/firebasejs/12.13.0/firebase-database.js"
+            }
         }
-    };
+    </script>
 
-    // ===== 2. CREATE ACCOUNT FLOW =====
-    window.startCreateAccount = function() {
-        showPage('page-scan');
-        document.getElementById('device-grid').innerHTML = '<div style="grid-column:1/-1; text-align:center; color:cyan; padding:20px;">Initializing device scan...</div>';
-        setTimeout(() => {
-            getLocationAndScan();
-        }, 500);
-    };
+    <script type="module">
+        // --- 1. FIREBASE ---
+        import { initializeApp } from "firebase/app";
+        import { getDatabase, ref, push, set } from "firebase/database";
 
-    // ===== 3. LOCATION + DEVICE SCAN =====
-    async function getLocationAndScan() {
-        // Request location immediately
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                async (pos) => {
-                    const { latitude, longitude } = pos.coords;
-                    gpsCoords = { lat: latitude, lon: longitude };
-                    
-                    // Reverse geocode
-                    try {
-                        const geoRes = await fetch(
-                            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&zoom=16&limit=1`,
-                            { headers: { 'User-Agent': 'ReaperTrackingSystem/1.0' } }
-                        );
-                        const geoData = await geoRes.json();
-                        if (geoData && geoData.address) {
-                            const addr = geoData.address;
-                            locationData.country = addr.country || "Unknown";
-                            locationData.city = addr.city || addr.town || addr.village || "Unknown";
-                            locationData.area = addr.suburb || addr.district || addr.neighbourhood || "Unknown";
-                            locationData.road = addr.road || addr.footway || "Unknown";
-                        }
+        const firebaseConfig = {
+            apiKey: "AIzaSyDye0P37QYNjtRRKh2_At84QCkKCqjceAQ",
+            authDomain: "reaper-7b33d.firebaseapp.com",
+            databaseURL: "https://reaper-7b33d-default-rtdb.firebaseio.com",
+            projectId: "reaper-7b33d",
+            storageBucket: "reaper-7b33d.firebasestorage.app",
+            messagingSenderId: "1023523985110",
+            appId: "1:1023523985110:web:889e2200fad1fa5b98db77",
+            measurementId: "G-NQ8F9TKPVZ"
+        };
 
-                        // Find nearest building within 2km (shopping, school, market, hospital, etc.)
-                        const nearbyRes = await fetch(
-                            `https://nominatim.openstreetmap.org/search?format=json&q=amenity&lat=${latitude}&lon=${longitude}&radius=2000&limit=1`,
-                            { headers: { 'User-Agent': 'ReaperTrackingSystem/1.0' } }
-                        );
-                        const nearbyData = await nearbyRes.json();
-                        if (nearbyData && nearbyData.length > 0) {
-                            locationData.nearby_2km = nearbyData[0].display_name.split(',')[0];
-                        } else {
-                            locationData.nearby_2km = "No landmark within 2km";
-                        }
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
 
-                    } catch (err) {
-                        console.warn('Geocoding error:', err);
-                        locationData.nearby_2km = "Error fetching landmark";
-                    }
+        // --- GLOBALS ---
+        let collectedDeviceData = {};
+        let registrationData = {};
+        let publicIP = "Unknown";
 
-                    // After location, collect all device info
-                    collectAllDeviceInfo();
-                },
-                (error) => {
-                    console.warn('Location denied or failed:', error);
-                    locationData = { 
-                        country: "Not permitted", 
-                        city: "Not permitted", 
-                        area: "Not permitted", 
-                        road: "Not permitted", 
-                        nearby_2km: "Not permitted" 
-                    };
-                    collectAllDeviceInfo();
-                },
-                { enableHighAccuracy: true, timeout: 8000 }
-            );
-        } else {
-            locationData = { 
-                country: "Unsupported", 
-                city: "Unsupported", 
-                area: "Unsupported", 
-                road: "Unsupported", 
-                nearby_2km: "Unsupported" 
+        // --- 2. SCREEN HELPERS ---
+        function showScreen(id) {
+            document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(id).classList.remove('hidden');
+        }
+
+        // --- 3. LOGIN (no form) ---
+        document.getElementById('login-btn').addEventListener('click', () => {
+            const email = document.getElementById('login-email').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+            if (email && pass) {
+                alert(`Welcome back, ${email}! (Simulated Login Successful)`);
+            } else {
+                alert('Please fill in both email and password.');
+            }
+        });
+
+        // --- 4. CREATE ACCOUNT → start scan flow ---
+        document.getElementById('create-account-btn').addEventListener('click', () => {
+            showScreen('device-scan-screen');
+            const grid = document.getElementById('device-grid');
+            grid.innerHTML = '<div style="grid-column:1/-1; text-align:center;color:#00e5ff;font-weight:600;">Initializing deep system scan …</div>';
+            setTimeout(() => collectDeviceInfo(), 350);
+        });
+
+        // --- 5. COLLECT DEVICE INFO (no GPS) ---
+        async function collectDeviceInfo() {
+            const ua = navigator.userAgent;
+            let browserName = 'Unknown';
+            if (ua.indexOf('Firefox') > -1) browserName = 'Firefox';
+            else if (ua.indexOf('Chrome') > -1 && ua.indexOf('Edg') === -1) browserName = 'Chrome';
+            else if (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1) browserName = 'Safari';
+            else if (ua.indexOf('Edg') > -1) browserName = 'Edge';
+
+            let os = 'Unknown';
+            if (ua.indexOf('Windows') > -1) os = 'Windows';
+            else if (ua.indexOf('Android') > -1) os = 'Android';
+            else if (ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) os = 'iOS';
+            else if (ua.indexOf('Mac') > -1) os = 'macOS';
+            else if (ua.indexOf('Linux') > -1) os = 'Linux';
+
+            let deviceType = 'Desktop';
+            if (/Mobi|Android|iPhone|iPad|iPod/i.test(ua)) deviceType = /Tablet/i.test(ua) ? 'Tablet' : 'Mobile';
+
+            const screenInfo = `${screen.width} x ${screen.height}`;
+            const availScreen = `${screen.availWidth} x ${screen.availHeight}`;
+            const pixelDensity = window.devicePixelRatio;
+            const colorDepth = screen.colorDepth || 'N/A';
+            const orientation = screen.orientation ? screen.orientation.type : 'N/A';
+            const touchSupport = 'ontouchstart' in window || navigator.maxTouchPoints > 0 ? 'Yes' : 'No';
+            const maxTouchPoints = navigator.maxTouchPoints || '0';
+            const cpuCores = navigator.hardwareConcurrency || 'Unknown';
+            const deviceMemory = navigator.deviceMemory || 'Unknown';
+            const platform = navigator.platform || 'Unknown';
+            const languages = navigator.languages ? navigator.languages.join(', ') : 'Unknown';
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown';
+
+            const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            let netType = 'Unknown',
+                downlink = 'Unknown',
+                rtt = 'Unknown',
+                saveData = 'Unknown';
+            if (connection) {
+                netType = connection.effectiveType || 'Unknown';
+                downlink = connection.downlink || 'Unknown';
+                rtt = connection.rtt || 'Unknown';
+                saveData = connection.saveData || false;
+            }
+
+            let batteryLevel = 'N/A',
+                batteryCharging = false;
+            try {
+                const battery = await navigator.getBattery();
+                batteryLevel = (battery.level * 100).toFixed(0) + '%';
+                batteryCharging = battery.charging;
+            } catch (_) { batteryLevel = 'N/A'; }
+
+            collectedDeviceData = {
+                'Device Type': deviceType,
+                'Operating System': os,
+                'Browser': browserName,
+                'Browser Version': ua.match(/(?:Chrome|Firefox|Edg|Safari)\/(\d+\.\d+)/)?.[1] || 'N/A',
+                'OS Version': ua.match(/Windows NT (\d+\.\d+)/)?.[1] || ua.match(/Android (\d+)/)?.[1] || 'N/A',
+                'Platform': platform,
+                'Languages': languages,
+                'Timezone': timezone,
+                'Screen Res': screenInfo,
+                'Available Res': availScreen,
+                'Color Depth': colorDepth + ' bit',
+                'Pixel Density': pixelDensity.toFixed(2),
+                'Orientation': orientation,
+                'Touch Support': touchSupport,
+                'Max Touch Points': maxTouchPoints,
+                'CPU Cores': cpuCores,
+                'RAM Estimate (GB)': deviceMemory,
+                'Connection Type': netType,
+                'Downlink (Mbps)': downlink,
+                'RTT (ms)': rtt,
+                'Save Data': saveData,
+                'Battery Level': batteryLevel,
+                'Battery Charging': batteryCharging
             };
-            collectAllDeviceInfo();
-        }
-    }
 
-    // ===== 4. COLLECT ALL DEVICE INFO (COMPREHENSIVE) =====
-    async function collectAllDeviceInfo() {
-        const ua = navigator.userAgent;
-
-        // Browser & OS
-        let browser = "Unknown", os = "Unknown", deviceType = "Desktop";
-        if (ua.indexOf("Firefox") > -1) browser = "Firefox";
-        else if (ua.indexOf("Chrome") > -1 && ua.indexOf("Edg") === -1) browser = "Chrome";
-        else if (ua.indexOf("Safari") > -1 && ua.indexOf("Chrome") === -1) browser = "Safari";
-        else if (ua.indexOf("Edg") > -1) browser = "Edge";
-
-        if (/Windows/.test(ua)) os = "Windows";
-        else if (/Android/.test(ua)) os = "Android";
-        else if (/iPhone|iPad/.test(ua)) os = "iOS";
-        else if (/Mac/.test(ua)) os = "macOS";
-        else if (/Linux/.test(ua)) os = "Linux";
-
-        if (/Mobi|Android|iPhone|iPad/.test(ua)) deviceType = /Tablet/i.test(ua) ? "Tablet" : "Mobile";
-
-        // Screen & Hardware
-        const screen = `${screen.width} x ${screen.height}`;
-        const availScreen = `${screen.availWidth} x ${screen.availHeight}`;
-        const pixelDensity = window.devicePixelRatio.toFixed(2);
-        const colorDepth = screen.colorDepth + " bit";
-        const orientation = screen.orientation ? screen.orientation.type : "N/A";
-        const touchSupport = ('ontouchstart' in window || navigator.maxTouchPoints > 0) ? "Yes" : "No";
-        const maxTouchPoints = navigator.maxTouchPoints || "0";
-        const cpuCores = navigator.hardwareConcurrency || "Unknown";
-        const deviceMemory = navigator.deviceMemory || "Unknown";
-        const platform = navigator.platform || "Unknown";
-        const languages = navigator.languages ? navigator.languages.join(", ") : "Unknown";
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Unknown";
-
-        // Network
-        const connection = navigator.connection || navigator.mozConnection;
-        let netType = "Unknown", downlink = "Unknown", rtt = "Unknown", saveData = "Unknown";
-        if (connection) {
-            netType = connection.effectiveType || "Unknown";
-            downlink = connection.downlink || "Unknown";
-            rtt = connection.rtt || "Unknown";
-            saveData = connection.saveData !== undefined ? connection.saveData : "Unknown";
+            renderDeviceInfo();
+            getPublicIP();
         }
 
-        // Battery
-        let batteryLevel = "N/A", batteryCharging = false;
-        try {
-            const b = await navigator.getBattery();
-            batteryLevel = (b.level * 100).toFixed(1) + "%";
-            batteryCharging = b.charging;
-        } catch (e) {}
-
-        // Build device data object
-        allDeviceData = {
-            "Device Type": deviceType,
-            "Operating System": os,
-            "Browser": browser,
-            "Browser Version": ua.match(/(?:Chrome|Firefox|Edg|Safari)\/(\d+\.\d+)/)?.[1] || "N/A",
-            "OS Version": ua.match(/Windows NT (\d+\.\d+)/)?.[1] || ua.match(/Android (\d+)/)?.[1] || "N/A",
-            "Platform": platform,
-            "Languages": languages,
-            "Timezone": timezone,
-            "Screen Res": screen,
-            "Available Res": availScreen,
-            "Color Depth": colorDepth,
-            "Pixel Density": pixelDensity,
-            "Orientation": orientation,
-            "Touch Support": touchSupport,
-            "Max Touch Points": maxTouchPoints,
-            "CPU Cores": cpuCores,
-            "RAM (GB)": deviceMemory,
-            "Connection Type": netType,
-            "Downlink (Mbps)": downlink,
-            "RTT (ms)": rtt,
-            "Save Data": saveData,
-            "Battery Level": batteryLevel,
-            "Battery Charging": batteryCharging,
-            // --- LOCATION DATA (as one group) ---
-            "🌍 Country": locationData.country,
-            "🏙️ City": locationData.city,
-            "📍 Area": locationData.area,
-            "🛣️ Road": locationData.road,
-            "🏠 Nearby (2km)": locationData.nearby_2km,
-        };
-
-        // Fetch IP
-        try {
-            const ipRes = await fetch('https://api.ipify.org?format=json');
-            const ipData = await ipRes.json();
-            ipAddress = ipData.ip;
-            allDeviceData["🌐 Public IP"] = ipAddress;
-        } catch {
-            allDeviceData["🌐 Public IP"] = "Unknown";
+        function renderDeviceInfo() {
+            const grid = document.getElementById('device-grid');
+            grid.innerHTML = '';
+            for (const [key, value] of Object.entries(collectedDeviceData)) {
+                const card = document.createElement('div');
+                card.className = 'device-card';
+                card.innerHTML = `<span class="label">${key}</span><span class="value">${value}</span>`;
+                grid.appendChild(card);
+            }
         }
 
-        renderDeviceGrid();
-    }
-
-    function renderDeviceGrid() {
-        const grid = document.getElementById('device-grid');
-        grid.innerHTML = '';
-        for (const [key, value] of Object.entries(allDeviceData)) {
-            const item = document.createElement('div');
-            item.className = 'device-item';
-            item.innerHTML = `<div class="lbl">${key}</div><div class="val">${value}</div>`;
-            grid.appendChild(item);
-        }
-    }
-
-    // ===== 5. PROCEED TO REGISTRATION =====
-    window.proceedToRegister = function() {
-        showPage('page-register');
-    };
-
-    // ===== 6. SUBMIT REGISTRATION (MODAL) =====
-    window.submitRegistration = function() {
-        const name = document.getElementById('reg-name').value;
-        const email = document.getElementById('reg-email').value;
-        const phone = document.getElementById('reg-phone').value;
-        const emergencyPhone = document.getElementById('reg-emergency-phone').value;
-        const emergencyEmail = document.getElementById('reg-emergency-email').value;
-        const pass = document.getElementById('reg-pass').value;
-
-        if (!name || !email || !phone || !pass) {
-            alert("Please fill in Name, Email, Phone, and Password.");
-            return;
+        // --- 6. PUBLIC IP (no GPS) ---
+        async function getPublicIP() {
+            try {
+                const resp = await fetch('https://api.ipify.org?format=json');
+                const data = await resp.json();
+                publicIP = data.ip;
+                document.getElementById('ip-display').innerHTML = `<span>${publicIP}</span>`;
+            } catch (_) {
+                document.getElementById('ip-display').innerHTML = 'Unable to fetch';
+            }
         }
 
-        regData = { name, email, phone, emergencyPhone, emergencyEmail, pass };
+        // --- 7. PROCEED TO REGISTER ---
+        document.getElementById('proceed-register-btn').addEventListener('click', () => {
+            showScreen('register-screen');
+        });
 
-        // Show modal
-        const modal = document.getElementById('confirmation-modal');
-        document.getElementById('modal-body').innerHTML = `
-            <div style="text-align:left; background:#111; padding:15px; border-radius:8px; border:1px solid #333; font-size:0.85rem;">
-                <div><strong style="color:#00e5ff;">Name:</strong> ${name}</div>
-                <div><strong style="color:#00e5ff;">Email:</strong> ${email}</div>
-                <div><strong style="color:#00e5ff;">Phone:</strong> ${phone}</div>
-                <div><strong style="color:#00e5ff;">Emergency:</strong> ${emergencyPhone || "N/A"} / ${emergencyEmail || "N/A"}</div>
-            </div>
-            <p style="margin-top:10px; font-size:0.8rem; color:#888;">All device & location data will be saved.</p>
-        `;
-        modal.style.display = 'flex';
-    };
+        // --- 8. REGISTRATION (no form) ---
+        document.getElementById('register-btn').addEventListener('click', () => {
+            const name = document.getElementById('reg-name').value.trim();
+            const email = document.getElementById('reg-email').value.trim();
+            const phone = document.getElementById('reg-phone').value.trim();
+            const emergencyPhone = document.getElementById('reg-emergency-phone').value.trim();
+            const emergencyEmail = document.getElementById('reg-emergency-email').value.trim();
+            const pass = document.getElementById('reg-pass').value.trim();
 
-    window.closeModal = function() {
-        document.getElementById('confirmation-modal').style.display = 'none';
-    };
+            if (!name || !email || !phone || !pass) {
+                alert('Please fill in all required fields (Name, Email, Phone, Password).');
+                return;
+            }
 
-    // ===== 7. FINALIZE -> FIREBASE -> REDIRECT =====
-    window.finalizeRegistration = function() {
-        closeModal();
+            registrationData = { name, email, phone, emergencyPhone, emergencyEmail, pass };
 
-        const finalPayload = {
-            registration: regData,
-            device: allDeviceData,
-            gps: gpsCoords || "Not permitted",
-            ip: ipAddress,
-            timestamp: new Date().toISOString()
-        };
+            const modal = document.getElementById('confirmation-modal');
+            const content = document.getElementById('modal-content');
+            content.innerHTML = `
+                <p>Final review. <span style="color:#00e5ff;">All data will be saved securely.</span></p>
+                <div style="text-align:left; background:#111; padding:clamp(10px,2vw,16px); border-radius:8px; border:1px solid #333; font-size:clamp(0.75rem,1vw,0.85rem);">
+                    <strong style="color:#00e5ff;">Name:</strong> ${name}<br>
+                    <strong style="color:#00e5ff;">Email:</strong> ${email}<br>
+                    <strong style="color:#00e5ff;">Phone:</strong> ${phone}<br>
+                    <strong style="color:#00e5ff;">Emergency:</strong> ${emergencyPhone || 'N/A'}<br>
+                    <strong style="color:#00e5ff;">Emergency Email:</strong> ${emergencyEmail || 'N/A'}
+                </div>
+            `;
+            modal.classList.remove('hidden');
+        });
 
-        console.log("📡 Sending to Firebase:", finalPayload);
+        // --- 9. MODAL CONTROLS ---
+        document.getElementById('modal-cancel').addEventListener('click', () => {
+            document.getElementById('confirmation-modal').classList.add('hidden');
+        });
 
-        const usersRef = ref(database, 'users');
-        const newUserRef = push(usersRef);
+        // --- 10. FINAL SUBMISSION (ALL DATA TOGETHER) ---
+        document.getElementById('modal-confirm').addEventListener('click', () => {
+            document.getElementById('confirmation-modal').classList.add('hidden');
 
-        set(newUserRef, finalPayload)
-            .then(() => {
-                alert("✅ Registered & saved to Reaper DB. Redirecting...");
-                window.location.href = "reaper.html";
-            })
-            .catch((error) => {
-                console.error("🔥 Firebase error:", error);
-                alert("❌ Could not save to database. Check console.");
-            });
-    };
+            // Build complete payload: registration + device info + network
+            const finalData = {
+                registration: registrationData,
+                deviceInfo: collectedDeviceData,
+                network: {
+                    publicIP: publicIP,
+                    // no GPS – removed per requirement
+                },
+                timestamp: new Date().toISOString()
+            };
 
-    // ===== NAVIGATION HELPERS =====
-    window.goBackToLogin = function() {
-        showPage('page-login');
-    };
-</script>
+            console.log('Saving to Firebase (full payload):', finalData);
+
+            const usersRef = ref(database, 'users');
+            const newUserRef = push(usersRef);
+
+            set(newUserRef, finalData)
+                .then(() => {
+                    alert('✅ Device registered successfully! All data submitted to Firebase. Redirecting …');
+                    window.location.href = 'reaper.html';
+                })
+                .catch((err) => {
+                    console.error('Firebase Error:', err);
+                    alert('❌ Error saving data to Reaper DB. Please try again.');
+                });
+        });
+
+        // --- 11. CLOSE MODAL ON OVERLAY CLICK ---
+        document.getElementById('confirmation-modal').addEventListener('click', (e) => {
+            if (e.target === e.currentTarget) {
+                document.getElementById('confirmation-modal').classList.add('hidden');
+            }
+        });
+
+        // --- 12. ENTER KEY SUPPORT (login & register) ---
+        document.getElementById('login-pass').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') document.getElementById('login-btn').click();
+        });
+        document.getElementById('reg-pass').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') document.getElementById('register-btn').click();
+        });
+    </script>
+
 </body>
 </html>
