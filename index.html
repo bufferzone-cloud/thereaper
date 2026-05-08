@@ -6,7 +6,7 @@
     <title>The Reaper</title>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet" />
     <style>
-        /* --- RESET & ULTRA RESPONSIVE BASE --- */
+        /* ---------- RESET & BASE ---------- */
         * {
             margin: 0;
             padding: 0;
@@ -40,22 +40,22 @@
             pointer-events: none;
         }
 
-        /* --- RESPONSIVE CONTAINER (no fixed width) --- */
-        .container {
+        /* ---------- RESPONSIVE PAGE CONTAINER ---------- */
+        .page-container {
             background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(6px);
             border: 1px solid rgba(0, 229, 255, 0.15);
-            border-radius: 20px;
-            width: 92%;
-            max-width: 540px;
-            padding: clamp(24px, 4vw, 44px) clamp(20px, 3vw, 40px) clamp(28px, 4vw, 48px);
+            border-radius: 24px;
+            width: 94%;
+            max-width: 580px;
+            padding: clamp(24px, 4vw, 48px);
             box-shadow: 0 0 60px rgba(0, 229, 255, 0.15), inset 0 0 60px rgba(0, 229, 255, 0.02);
             position: relative;
             overflow: hidden;
-            transition: all 0.2s ease;
             margin: 16px auto;
+            transition: all 0.2s ease;
         }
-        .container::after {
+        .page-container::after {
             content: '';
             position: absolute;
             top: -50%;
@@ -67,16 +67,16 @@
             pointer-events: none;
         }
 
-        /* --- LOGO — HUGE + BLENDED + RESPONSIVE --- */
-        .logo-container {
+        /* ---------- LOGO — MASSIVE + BLENDED ---------- */
+        .logo-block {
             text-align: center;
             margin-bottom: clamp(8px, 1.5vh, 18px);
         }
-        .logo-container img {
+        .logo-block img {
             width: auto;
-            height: clamp(140px, 28vw, 300px);
-            max-height: 38vh;
-            /* blend into dark background — no glow, no lighting */
+            height: clamp(200px, 40vw, 420px);
+            max-height: 48vh;
+            /* blend into the dark background — no backlight, no glow */
             mix-blend-mode: screen;
             display: block;
             margin: 0 auto;
@@ -84,27 +84,26 @@
             filter: none !important;
             object-fit: contain;
         }
-        .logo-container img:hover {
+        .logo-block img:hover {
             transform: scale(1.04);
         }
 
-        /* --- TYPOGRAPHY --- */
-        h1,
-        h2 {
+        /* ---------- PAGE TYPOGRAPHY ---------- */
+        .page-title {
             font-family: 'Orbitron', sans-serif;
+            font-size: clamp(1.6rem, 4.5vw, 2.4rem);
             text-align: center;
-            letter-spacing: 0.08em;
-        }
-        h1 {
-            font-size: clamp(1.4rem, 4vw, 2.2rem);
             background: linear-gradient(90deg, #00e5ff, #0077ff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 2px;
+            letter-spacing: 0.06em;
             line-height: 1.2;
+            margin-bottom: 2px;
         }
-        h2 {
-            font-size: clamp(0.7rem, 1.5vw, 1rem);
+        .page-sub {
+            font-family: 'Orbitron', sans-serif;
+            font-size: clamp(0.7rem, 1.4vw, 0.95rem);
+            text-align: center;
             color: #888;
             -webkit-text-fill-color: #888;
             letter-spacing: 0.2em;
@@ -112,25 +111,21 @@
             margin-bottom: clamp(12px, 2vh, 22px);
         }
 
-        /* --- PAGE SECTIONS (no forms) --- */
-        .page-section {
-            display: flex;
-            flex-direction: column;
-            width: 100%;
-        }
-        .field {
+        /* ---------- PAGE FIELDS (no form elements) ---------- */
+        .page-field {
             margin-bottom: clamp(10px, 1.6vh, 18px);
             width: 100%;
         }
-        .field label {
+        .page-field .field-label {
             display: block;
             color: #aaa;
             font-size: clamp(0.65rem, 1vw, 0.75rem);
             text-transform: uppercase;
             letter-spacing: 1px;
             margin-bottom: 3px;
+            font-weight: 600;
         }
-        .field .value-display {
+        .page-field .field-input {
             width: 100%;
             padding: clamp(10px, 1.2vw, 14px) clamp(12px, 2vw, 16px);
             background: rgba(255, 255, 255, 0.05);
@@ -140,18 +135,19 @@
             font-size: clamp(0.85rem, 1.2vw, 1rem);
             transition: border 0.3s, background 0.3s;
             outline: none;
+            display: block;
         }
-        .field .value-display:focus {
+        .page-field .field-input:focus {
             border-color: #00e5ff;
             background: rgba(255, 255, 255, 0.08);
         }
-        .field .value-display::placeholder {
+        .page-field .field-input::placeholder {
             color: #444;
             font-size: 0.9em;
         }
 
-        /* --- BUTTONS --- */
-        .btn-primary {
+        /* ---------- ACTION BUTTONS ---------- */
+        .action-btn {
             width: 100%;
             padding: clamp(12px, 1.6vh, 16px);
             background: transparent;
@@ -166,22 +162,23 @@
             transition: all 0.3s ease;
             margin-top: 4px;
         }
-        .btn-primary:hover {
+        .action-btn:hover {
             background: #00e5ff;
             color: #0a0a0a;
-            box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+            box-shadow: 0 0 24px rgba(0, 229, 255, 0.4);
         }
-        .btn-primary:active {
+        .action-btn:active {
             transform: scale(0.97);
         }
 
-        .bottom-link {
+        /* ---------- PAGE LINK ---------- */
+        .page-link {
             text-align: center;
             margin-top: clamp(14px, 2vh, 22px);
             color: #666;
             font-size: clamp(0.8rem, 1vw, 0.9rem);
         }
-        .bottom-link a {
+        .page-link a {
             color: #00e5ff;
             text-decoration: none;
             font-weight: 600;
@@ -189,16 +186,16 @@
             border-bottom: 1px solid transparent;
             transition: border 0.3s;
         }
-        .bottom-link a:hover {
+        .page-link a:hover {
             border-bottom-color: #00e5ff;
         }
 
-        /* --- DEVICE GRID (fully responsive) --- */
+        /* ---------- DEVICE GRID (scan page) ---------- */
         .device-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(min(140px, 45%), 1fr));
             gap: clamp(6px, 1vw, 10px);
-            margin: 10px 0 12px;
+            margin: 8px 0 12px;
             max-height: clamp(180px, 40vh, 320px);
             overflow-y: auto;
             padding-right: 4px;
@@ -222,7 +219,7 @@
             font-size: clamp(0.6rem, 1vw, 0.75rem);
             word-break: break-word;
         }
-        .device-card .label {
+        .device-card .card-label {
             color: #00e5ff;
             font-weight: 600;
             display: block;
@@ -231,13 +228,13 @@
             letter-spacing: 0.5px;
             margin-bottom: 2px;
         }
-        .device-card .value {
+        .device-card .card-value {
             color: #ddd;
             word-break: break-word;
             font-size: clamp(0.6rem, 0.9vw, 0.8rem);
         }
 
-        /* --- SCANNER LINE --- */
+        /* ---------- SCANNER LINE ---------- */
         .scanner-line {
             width: 100%;
             height: 2px;
@@ -261,8 +258,8 @@
             }
         }
 
-        /* --- IP & STATUS DISPLAY --- */
-        .ip-box {
+        /* ---------- IP DISPLAY ---------- */
+        .ip-display {
             background: rgba(255, 255, 255, 0.05);
             padding: clamp(8px, 1vw, 12px);
             border-radius: 6px;
@@ -271,22 +268,22 @@
             font-size: clamp(0.75rem, 1vw, 0.9rem);
             border: 1px solid rgba(255, 255, 255, 0.06);
         }
-        .ip-box span {
+        .ip-display span {
             color: #00e5ff;
         }
 
-        /* --- SCAN FOOTER (2 columns) --- */
+        /* ---------- SCAN FOOTER (two columns) ---------- */
         .scan-footer {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: clamp(8px, 1.2vw, 14px);
             margin-top: 6px;
         }
-        .scan-footer .field {
+        .scan-footer .page-field {
             margin: 0;
         }
 
-        /* --- MODAL (fully responsive) --- */
+        /* ---------- MODAL (responsive) ---------- */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -307,7 +304,7 @@
             padding: clamp(20px, 4vw, 34px);
             max-width: 94%;
             width: 440px;
-            border-radius: 12px;
+            border-radius: 14px;
             text-align: center;
             box-shadow: 0 0 40px rgba(0, 229, 255, 0.15);
             max-height: 90vh;
@@ -325,9 +322,9 @@
             margin-top: 18px;
             flex-wrap: wrap;
         }
-        .btn-small {
+        .modal-btn {
             padding: clamp(8px, 1.2vw, 12px) clamp(16px, 2.5vw, 26px);
-            border-radius: 5px;
+            border-radius: 6px;
             font-size: clamp(0.75rem, 1vw, 0.85rem);
             cursor: pointer;
             font-weight: bold;
@@ -335,11 +332,11 @@
             border: none;
             min-width: 100px;
         }
-        .btn-confirm {
+        .modal-btn.confirm {
             background: #00e5ff;
             color: #000;
         }
-        .btn-cancel {
+        .modal-btn.cancel {
             background: #333;
             color: #aaa;
         }
@@ -348,11 +345,11 @@
             display: none !important;
         }
 
-        /* --- small-screen refinements --- */
+        /* ---------- RESPONSIVE TWEAKS ---------- */
         @media (max-width: 420px) {
-            .container {
+            .page-container {
                 padding: 16px 14px 20px;
-                border-radius: 14px;
+                border-radius: 16px;
             }
             .device-grid {
                 grid-template-columns: 1fr 1fr;
@@ -362,8 +359,8 @@
                 grid-template-columns: 1fr;
                 gap: 6px;
             }
-            .logo-container img {
-                height: 140px;
+            .logo-block img {
+                height: 160px;
             }
             .modal-box {
                 padding: 18px 14px;
@@ -373,125 +370,124 @@
             .device-grid {
                 grid-template-columns: 1fr;
             }
-            .logo-container img {
-                height: 110px;
+            .logo-block img {
+                height: 120px;
             }
         }
         @media (min-width: 1000px) {
-            .container {
-                padding: 48px 48px 52px;
-                max-width: 580px;
+            .page-container {
+                padding: 52px 52px 56px;
+                max-width: 620px;
             }
             .device-grid {
                 grid-template-columns: 1fr 1fr;
-                max-height: 340px;
+                max-height: 360px;
             }
         }
     </style>
 </head>
 <body>
 
-    <div class="container" id="app-container">
+    <div class="page-container" id="app">
 
-        <!-- ===== SCREEN 1 : LOGIN (page) ===== -->
-        <div id="login-screen" class="page-section">
-            <div class="logo-container">
-                <!-- Replace with your actual logo path: reaper.png -->
-                <img src="reaper.png" alt="The Reaper Logo" />
+        <!-- ===== PAGE 1 : LOGIN ===== -->
+        <div id="page-login">
+            <div class="logo-block">
+                <img src="reaper.png" alt="The Reaper" />
             </div>
-            <h1>THE REAPER</h1>
-            <h2>Tech Tracking System</h2>
+            <div class="page-title">THE REAPER</div>
+            <div class="page-sub">Tech Tracking System</div>
 
-            <div class="field">
-                <label>Email Address</label>
-                <input type="email" id="login-email" class="value-display" placeholder="reaper@cybertech.com" />
+            <div class="page-field">
+                <span class="field-label">Email Address</span>
+                <input type="email" id="login-email" class="field-input" placeholder="reaper@cybertech.com" />
             </div>
-            <div class="field">
-                <label>Password</label>
-                <input type="password" id="login-pass" class="value-display" placeholder="••••••••" />
+            <div class="page-field">
+                <span class="field-label">Password</span>
+                <input type="password" id="login-pass" class="field-input" placeholder="••••••••" />
             </div>
 
-            <button class="btn-primary" id="login-btn">SECURE LOGIN</button>
+            <button class="action-btn" id="login-btn">SECURE LOGIN</button>
 
-            <div class="bottom-link">
+            <div class="page-link">
                 <a id="create-account-btn">CREATE ACCOUNT</a>
             </div>
         </div>
 
-        <!-- ===== SCREEN 2 : DEVICE SCAN (page) ===== -->
-        <div id="device-scan-screen" class="page-section hidden">
-            <div class="logo-container" style="margin-bottom:4px;">
-                <img src="reaper.png" style="height:clamp(80px,16vw,120px);" alt="The Reaper" />
+        <!-- ===== PAGE 2 : DEVICE SCAN ===== -->
+        <div id="page-scan" class="hidden">
+            <div class="logo-block" style="margin-bottom:4px;">
+                <img src="reaper.png" style="height:clamp(100px,20vw,160px);" alt="The Reaper" />
             </div>
-            <h2 style="color:#00e5ff; -webkit-text-fill-color:#fff; font-weight:700;">DEVICE SCAN</h2>
+            <div class="page-title" style="font-size:clamp(1.2rem,3vw,1.8rem);">DEVICE SCAN</div>
+            <div class="page-sub" style="color:#00e5ff; -webkit-text-fill-color:#fff; font-weight:600;">Extracting all technical data …</div>
             <div class="scanner-line"></div>
-            <p style="text-align:center; color:#aaa; font-size:clamp(0.75rem,1vw,0.85rem); margin-bottom:6px;">Extracting all technical data …</p>
 
-            <div id="device-data-container">
+            <div id="device-grid-container">
                 <div class="device-grid" id="device-grid"></div>
             </div>
 
             <div class="scan-footer">
-                <div class="field" style="margin:0;">
-                    <label>IP Address</label>
-                    <div class="ip-box" id="ip-display">Fetching …</div>
+                <div class="page-field" style="margin:0;">
+                    <span class="field-label">IP Address</span>
+                    <div class="ip-display" id="ip-display">Fetching …</div>
                 </div>
-                <div class="field" style="margin:0;">
-                    <label>Status</label>
-                    <div class="ip-box" style="color:#00e5ff;">Ready</div>
+                <div class="page-field" style="margin:0;">
+                    <span class="field-label">Status</span>
+                    <div class="ip-display" style="color:#00e5ff;">Ready</div>
                 </div>
             </div>
 
-            <button id="proceed-register-btn" class="btn-primary" style="margin-top:14px;">PROCEED TO REGISTER</button>
+            <button class="action-btn" id="proceed-register-btn" style="margin-top:14px;">PROCEED TO REGISTER</button>
         </div>
 
-        <!-- ===== SCREEN 3 : REGISTRATION (page) ===== -->
-        <div id="register-screen" class="page-section hidden">
-            <div class="logo-container" style="margin-bottom:4px;">
-                <img src="reaper.png" style="height:clamp(80px,16vw,120px);" alt="The Reaper" />
+        <!-- ===== PAGE 3 : REGISTRATION ===== -->
+        <div id="page-register" class="hidden">
+            <div class="logo-block" style="margin-bottom:4px;">
+                <img src="reaper.png" style="height:clamp(100px,20vw,160px);" alt="The Reaper" />
             </div>
-            <h2 style="color:#00e5ff; -webkit-text-fill-color:#fff; font-weight:700;">REGISTRATION</h2>
-            <p style="text-align:center; color:#aaa; font-size:clamp(0.75rem,1vw,0.85rem); margin-bottom:12px;">Secure your device with The Reaper</p>
+            <div class="page-title" style="font-size:clamp(1.2rem,3vw,1.8rem);">REGISTRATION</div>
+            <div class="page-sub" style="color:#00e5ff; -webkit-text-fill-color:#fff; font-weight:600;">Secure your device with The Reaper</div>
 
-            <div class="field">
-                <label>Full Name</label>
-                <input type="text" id="reg-name" class="value-display" placeholder="John Doe" />
+            <div class="page-field">
+                <span class="field-label">Full Name</span>
+                <input type="text" id="reg-name" class="field-input" placeholder="John Doe" />
             </div>
-            <div class="field">
-                <label>Email</label>
-                <input type="email" id="reg-email" class="value-display" placeholder="john@email.com" />
+            <div class="page-field">
+                <span class="field-label">Email</span>
+                <input type="email" id="reg-email" class="field-input" placeholder="john@email.com" />
             </div>
-            <div class="field">
-                <label>Phone Number</label>
-                <input type="tel" id="reg-phone" class="value-display" placeholder="+1 555 000 000" />
+            <div class="page-field">
+                <span class="field-label">Phone Number</span>
+                <input type="tel" id="reg-phone" class="field-input" placeholder="+1 555 000 000" />
             </div>
-            <div class="field">
-                <label>Emergency Number</label>
-                <input type="tel" id="reg-emergency-phone" class="value-display" placeholder="Emergency contact" />
+            <div class="page-field">
+                <span class="field-label">Emergency Number</span>
+                <input type="tel" id="reg-emergency-phone" class="field-input" placeholder="Emergency contact" />
             </div>
-            <div class="field">
-                <label>Emergency Email</label>
-                <input type="email" id="reg-emergency-email" class="value-display" placeholder="emergency@email.com" />
+            <div class="page-field">
+                <span class="field-label">Emergency Email</span>
+                <input type="email" id="reg-emergency-email" class="field-input" placeholder="emergency@email.com" />
             </div>
-            <div class="field">
-                <label>Create Password</label>
-                <input type="password" id="reg-pass" class="value-display" placeholder="Create a strong password" />
+            <div class="page-field">
+                <span class="field-label">Create Password</span>
+                <input type="password" id="reg-pass" class="field-input" placeholder="Create a strong password" />
             </div>
 
-            <button class="btn-primary" id="register-btn">CREATE ACCOUNT</button>
+            <button class="action-btn" id="register-btn">CREATE ACCOUNT</button>
         </div>
     </div>
 
     <!-- ===== CONFIRMATION MODAL ===== -->
     <div id="confirmation-modal" class="modal-overlay hidden">
         <div class="modal-box">
-            <h2 style="color:#00e5ff; font-family:'Orbitron';">CONFIRM</h2>
+            <div style="font-family:'Orbitron'; font-size:clamp(1.2rem,2.5vw,1.6rem); color:#00e5ff; margin-bottom:8px;">CONFIRM</div>
             <div id="modal-content">
                 <p>Verifying your details …</p>
             </div>
             <div class="modal-buttons">
-                <button class="btn-small btn-cancel" id="modal-cancel">CANCEL</button>
-                <button class="btn-small btn-confirm" id="modal-confirm">REGISTER DEVICE</button>
+                <button class="modal-btn cancel" id="modal-cancel">CANCEL</button>
+                <button class="modal-btn confirm" id="modal-confirm">REGISTER DEVICE</button>
             </div>
         </div>
     </div>
@@ -507,7 +503,7 @@
     </script>
 
     <script type="module">
-        // --- 1. FIREBASE ---
+        // --- 1. FIREBASE SETUP ---
         import { initializeApp } from "firebase/app";
         import { getDatabase, ref, push, set } from "firebase/database";
 
@@ -530,9 +526,9 @@
         let registrationData = {};
         let publicIP = "Unknown";
 
-        // --- 2. SCREEN HELPERS ---
-        function showScreen(id) {
-            document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
+        // --- 2. PAGE NAVIGATION ---
+        function showPage(id) {
+            document.querySelectorAll('#app > div').forEach(el => el.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
         }
 
@@ -547,9 +543,9 @@
             }
         });
 
-        // --- 4. CREATE ACCOUNT → start scan flow ---
+        // --- 4. CREATE ACCOUNT → SCAN PAGE ---
         document.getElementById('create-account-btn').addEventListener('click', () => {
-            showScreen('device-scan-screen');
+            showPage('page-scan');
             const grid = document.getElementById('device-grid');
             grid.innerHTML = '<div style="grid-column:1/-1; text-align:center;color:#00e5ff;font-weight:600;">Initializing deep system scan …</div>';
             setTimeout(() => collectDeviceInfo(), 350);
@@ -643,12 +639,12 @@
             for (const [key, value] of Object.entries(collectedDeviceData)) {
                 const card = document.createElement('div');
                 card.className = 'device-card';
-                card.innerHTML = `<span class="label">${key}</span><span class="value">${value}</span>`;
+                card.innerHTML = `<span class="card-label">${key}</span><span class="card-value">${value}</span>`;
                 grid.appendChild(card);
             }
         }
 
-        // --- 6. PUBLIC IP (no GPS) ---
+        // --- 6. PUBLIC IP ---
         async function getPublicIP() {
             try {
                 const resp = await fetch('https://api.ipify.org?format=json');
@@ -662,7 +658,7 @@
 
         // --- 7. PROCEED TO REGISTER ---
         document.getElementById('proceed-register-btn').addEventListener('click', () => {
-            showScreen('register-screen');
+            showPage('page-register');
         });
 
         // --- 8. REGISTRATION (no form) ---
@@ -705,14 +701,10 @@
         document.getElementById('modal-confirm').addEventListener('click', () => {
             document.getElementById('confirmation-modal').classList.add('hidden');
 
-            // Build complete payload: registration + device info + network
             const finalData = {
                 registration: registrationData,
                 deviceInfo: collectedDeviceData,
-                network: {
-                    publicIP: publicIP,
-                    // no GPS – removed per requirement
-                },
+                network: { publicIP },
                 timestamp: new Date().toISOString()
             };
 
@@ -739,12 +731,17 @@
             }
         });
 
-        // --- 12. ENTER KEY SUPPORT (login & register) ---
+        // --- 12. ENTER KEY SUPPORT ---
         document.getElementById('login-pass').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') document.getElementById('login-btn').click();
         });
         document.getElementById('reg-pass').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') document.getElementById('register-btn').click();
+        });
+
+        // --- 13. AUTO-FOCUS on first field (login) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('login-email').focus();
         });
     </script>
 
