@@ -86,11 +86,16 @@
             color: #ffcc00;
             background: rgba(255, 200, 0, 0.05);
         }
+        #device-status.unregistered {
+            border: 1px solid rgba(255, 100, 100, 0.3);
+            color: #ff6666;
+            background: rgba(255, 100, 100, 0.05);
+        }
 
         #map-container {
             width: 100%;
             max-width: 900px;
-            height: 340px;
+            height: 400px;
             border-radius: 14px;
             overflow: hidden;
             border: 1px solid rgba(0, 229, 255, 0.15);
@@ -362,7 +367,7 @@
 
         @media (max-width: 480px) {
             #map-container {
-                height: 220px;
+                height: 260px;
             }
             .device-grid {
                 grid-template-columns: 1fr 1fr;
@@ -391,8 +396,8 @@
         <p>Hi <strong id="user-name-display">User</strong>, welcome to the reaper</p>
     </div>
 
-    <div id="device-status" class="registered">
-        <span id="status-text">✓ This is your registered device (phone) — location updates every 10 seconds</span>
+    <div id="device-status" class="unregistered">
+        <span id="status-text">⏳ Loading device status...</span>
     </div>
 
     <div id="map-container">
@@ -410,8 +415,9 @@
 
     <div class="action-row">
         <button class="action-btn" id="setup-device-btn">CONTINUE DEVICE SETUP</button>
-        <button class="action-btn" id="track-device-btn">📍 TRACK DEVICE</button>
-        <button class="action-btn danger" id="delete-device-btn">DELETE DEVICE</button>
+        <button class="action-btn hidden" id="track-device-btn">📍 TRACK DEVICE</button>
+        <button class="action-btn danger hidden" id="delete-device-btn">DELETE DEVICE</button>
+        <button class="action-btn" id="logout-btn">LOGOUT</button>
     </div>
 
     <div id="wizard-modal" class="modal-overlay hidden">
@@ -493,8 +499,9 @@
     <script type="module">
         import { initializeApp } from "firebase/app";
         import { getDatabase, ref, set, get, remove, update, onValue } from "firebase/database";
-        import { getAuth, onAuthStateChanged } from "firebase/auth";
+        import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 
+        // -------------------- FIREBASE CONFIG --------------------
         const firebaseConfig = {
             apiKey: "AIzaSyDye0P37QYNjtRRKh2_At84QCkKCqjceAQ",
             authDomain: "reaper-7b33d.firebaseapp.com",
@@ -510,6 +517,7 @@
         const database = getDatabase(app);
         const auth = getAuth(app);
 
+        // -------------------- GLOBALS --------------------
         let currentUser = null;
         let currentUid = null;
         let registeredDeviceId = null;
@@ -525,18 +533,22 @@
         let wizardStep = 1;
         let wizardData = {};
         let isRegisteredDevice = false;
+        let deviceListener = null;
+        let locationWatchId = null;
 
+        // DOM refs
         const userNameDisplay = document.getElementById('user-name-display');
         const deviceGrid = document.getElementById('device-details-grid');
         const noDeviceMsg = document.getElementById('no-device-message');
         const setupBtn = document.getElementById('setup-device-btn');
         const deleteBtn = document.getElementById('delete-device-btn');
         const trackBtn = document.getElementById('track-device-btn');
+        const logoutBtn = document.getElementById('logout-btn');
         const wizardModal = document.getElementById('wizard-modal');
         const statusEl = document.getElementById('device-status');
         const statusText = document.getElementById('status-text');
 
-        // ---------- AUTH ----------
+        // -------------------- AUTH --------------------
         function showLoginRedirect() {
             alert('No authenticated user found. Please log in again.');
             window.location.href = 'index.html';
@@ -556,7 +568,21 @@
             }
         });
 
-        // ---------- LOAD USER DEVICE ----------
+        // -------------------- LOGOUT --------------------
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                if (updateInterval) clearInterval(updateInterval);
+                if (locationWatchId) navigator.geolocation.clearWatch(locationWatchId);
+                await signOut(auth);
+                localStorage.removeItem('reaper_device_id');
+                window.location.href = 'index.html';
+            } catch (err) {
+                console.error('Logout error:', err);
+                alert('Error signing out. Please try again.');
+            }
+        });
+
+        // -------------------- LOAD USER DEVICE --------------------
         async function loadUserDevice() {
             if (!currentUid) return;
             const userRef = ref(database, 'users/' + currentUid);
@@ -571,27 +597,29 @@
                         deviceDataRef = ref(database, 'users/' + currentUid + '/registeredDevices/' + registeredDeviceId);
                         await loadDeviceData();
                         setupBtn.textContent = 'UPDATE DEVICE SETUP';
+                        deleteBtn.classList.remove('hidden');
                     } else {
-                        noDeviceMsg.classList.remove('hidden');
-                        deviceGrid.innerHTML = '';
-                        registeredDeviceId = null;
-                        deviceDataRef = null;
-                        setupBtn.textContent = 'CONTINUE DEVICE SETUP';
-                        statusEl.className = 'registered';
-                        statusText.textContent = '⚠ No registered device yet. Please set one up.';
+                        setUnregisteredState();
                     }
                 } else {
-                    noDeviceMsg.classList.remove('hidden');
-                    deviceGrid.innerHTML = '';
-                    registeredDeviceId = null;
-                    deviceDataRef = null;
-                    setupBtn.textContent = 'CONTINUE DEVICE SETUP';
-                    statusEl.className = 'registered';
-                    statusText.textContent = '⚠ No registered device yet. Please set one up.';
+                    setUnregisteredState();
                 }
             } catch (err) {
                 console.error('Error loading user device:', err);
+                setUnregisteredState();
             }
+        }
+
+        function setUnregisteredState() {
+            noDeviceMsg.classList.remove('hidden');
+            deviceGrid.innerHTML = '';
+            registeredDeviceId = null;
+            deviceDataRef = null;
+            setupBtn.textContent = 'CONTINUE DEVICE SETUP';
+            deleteBtn.classList.add('hidden');
+            trackBtn.classList.add('hidden');
+            statusEl.className = 'unregistered';
+            statusText.textContent = '⚠ No registered device yet. Please set one up.';
         }
 
         async function loadDeviceData() {
@@ -602,11 +630,11 @@
                     const data = snap.val();
                     wizardData = data;
                     renderDeviceDetails(data.deviceDetails || {});
-                    
+
                     // Check if this is the registered device (phone) or a different device
                     const storedDeviceId = localStorage.getItem('reaper_device_id');
                     const registeredDeviceIdFromDB = data.mei || '';
-                    
+
                     if (storedDeviceId && registeredDeviceIdFromDB && storedDeviceId === registeredDeviceIdFromDB) {
                         isRegisteredDevice = true;
                         statusEl.className = 'registered';
@@ -631,16 +659,15 @@
                     noDeviceMsg.classList.add('hidden');
                     deviceGrid.classList.remove('hidden');
                 } else {
-                    noDeviceMsg.classList.remove('hidden');
-                    deviceGrid.innerHTML = '';
-                    setupBtn.textContent = 'CONTINUE DEVICE SETUP';
+                    setUnregisteredState();
                 }
             } catch (err) {
                 console.error('Error loading device data:', err);
+                setUnregisteredState();
             }
         }
 
-        // ---------- RENDER DETAILS ----------
+        // -------------------- RENDER DETAILS --------------------
         function renderDeviceDetails(details) {
             deviceGrid.innerHTML = '';
             if (!details || Object.keys(details).length === 0) {
@@ -655,7 +682,7 @@
             }
         }
 
-        // ---------- MAP & MARKERS ----------
+        // -------------------- MAP & MARKERS --------------------
         function initMap(lat, lon) {
             if (map) {
                 map.invalidateSize();
@@ -688,8 +715,16 @@
                 phoneMarker = L.marker([lat, lon], { icon: phoneIcon }).addTo(map)
                     .bindPopup('<b>Registered Device (Phone)</b><br>Last known location');
             }
-            if (!map.getBounds().contains([lat, lon])) {
-                map.setView([lat, lon], map.getZoom(), { animate: true });
+            // Only zoom if markers are not already visible
+            if (!map.getBounds().contains([lat, lon]) || !currentMarker) {
+                // If we have both markers, fit to both
+                if (currentMarker) {
+                    const curLoc = currentMarker.getLatLng();
+                    const bounds = L.latLngBounds([curLoc.lat, curLoc.lng], [lat, lon]);
+                    map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+                } else {
+                    map.setView([lat, lon], map.getZoom(), { animate: true });
+                }
             }
         }
 
@@ -710,6 +745,14 @@
                 currentMarker = L.marker([lat, lon], { icon: userIcon }).addTo(map)
                     .bindPopup('<b>Your Current Device</b><br>' + (isRegisteredDevice ? 'This is your phone' : 'You are viewing from this device'));
             }
+            // Fit to both markers if phone marker exists
+            if (phoneMarker) {
+                const phoneLoc = phoneMarker.getLatLng();
+                const bounds = L.latLngBounds([lat, lon], [phoneLoc.lat, phoneLoc.lng]);
+                map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+            } else {
+                map.setView([lat, lon], map.getZoom(), { animate: true });
+            }
         }
 
         function getPhoneLocation() {
@@ -729,7 +772,7 @@
             return null;
         }
 
-        // ---------- TRACK ROUTE ----------
+        // -------------------- TRACK ROUTE (fixed zoom + draw) --------------------
         trackBtn.addEventListener('click', async () => {
             if (!map) {
                 alert('Map is not ready yet.');
@@ -741,28 +784,57 @@
                 alert('Missing location data for either the registered device or your current device.');
                 return;
             }
+
+            // 1. Clear any existing route
             if (routingControl) {
                 map.removeControl(routingControl);
                 routingControl = null;
             }
+
+            // 2. Create bounds and zoom to fit both points (ALWAYS do this first)
+            const bounds = L.latLngBounds([currentLoc.lat, currentLoc.lon], [phoneLoc.lat, phoneLoc.lon]);
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+
+            // 3. Attempt to draw a route
             const waypoints = [
                 L.latLng(currentLoc.lat, currentLoc.lon),
                 L.latLng(phoneLoc.lat, phoneLoc.lon)
             ];
-            routingControl = L.Routing.control({
-                waypoints: waypoints,
-                lineOptions: {
-                    styles: [{ color: '#00e5ff', weight: 4, opacity: 0.7 }]
-                },
-                showAlternatives: false,
-                fitSelectedRoutes: true,
-                router: L.Routing.osrmv1({
-                    serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1'
-                })
-            }).addTo(map);
+
+            try {
+                routingControl = L.Routing.control({
+                    waypoints: waypoints,
+                    lineOptions: {
+                        styles: [{ color: '#00e5ff', weight: 4, opacity: 0.9 }]
+                    },
+                    showAlternatives: false,
+                    fitSelectedRoutes: false, // we already called fitBounds
+                    router: L.Routing.osrmv1({
+                        serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1'
+                    }),
+                    createMarker: function(i, waypoint, n) {
+                        // Don't create extra markers (we already have our own)
+                        return null;
+                    }
+                }).addTo(map);
+
+                routingControl.on('routingerror', function(e) {
+                    console.warn('Routing error:', e.error);
+                    // Map is already zoomed to both points, so user still sees the locations
+                });
+
+                routingControl.on('routesfound', function(e) {
+                    // Route drawn successfully
+                    console.log('Route found with', e.waypoints.length, 'waypoints');
+                });
+
+            } catch (err) {
+                console.warn('Error creating routing control:', err);
+                // Map is already zoomed to both points
+            }
         });
 
-        // ---------- LOCATION WATCH ----------
+        // -------------------- LOCATION WATCH --------------------
         function startLocationWatch() {
             if (!navigator.geolocation) return;
             if (locationWatchId) navigator.geolocation.clearWatch(locationWatchId);
@@ -771,16 +843,19 @@
                     lastKnownLat = pos.coords.latitude;
                     lastKnownLon = pos.coords.longitude;
                     updateCurrentMarker(lastKnownLat, lastKnownLon);
+
                     // If this is the registered device, update phoneLocation in Firebase
                     if (isRegisteredDevice && currentUid && deviceDataRef) {
-                        const phoneLocRef = ref(database, 'users/' + currentUid + '/registeredDevices/' + registeredDeviceId + '/phoneLocation');
+                        const phoneLocRef = ref(database, 'users/' + currentUid + '/registeredDevices/' + registeredDeviceId +
+                        '/phoneLocation');
                         set(phoneLocRef, {
                             lat: lastKnownLat,
                             lon: lastKnownLon,
                             timestamp: new Date().toISOString()
                         }).catch(() => {});
                     }
-                    // Also save current location for other devices to see
+
+                    // Always save current location for other devices to see
                     if (currentUid) {
                         const curLocRef = ref(database, 'users/' + currentUid + '/currentLocation');
                         set(curLocRef, {
@@ -794,13 +869,13 @@
                     console.warn('Location error:', err.message);
                 }, {
                     enableHighAccuracy: true,
-                    maximumAge: 10000,
-                    timeout: 15000
+                    maximumAge: 5000,
+                    timeout: 10000
                 }
             );
         }
 
-        // ---------- COLLECT DEVICE INFO ----------
+        // -------------------- COLLECT DEVICE INFO --------------------
         function collectDeviceInfo() {
             const ua = navigator.userAgent;
             let browserName = 'Unknown';
@@ -840,6 +915,16 @@
                 rtt = connection.rtt || 'Unknown';
             }
 
+            let batteryLevel = 'N/A',
+                batteryCharging = false;
+            try {
+                const battery = navigator.getBattery();
+                battery.then((b) => {
+                    batteryLevel = (b.level * 100).toFixed(0) + '%';
+                    batteryCharging = b.charging;
+                }).catch(() => {});
+            } catch (_) { batteryLevel = 'N/A'; }
+
             return {
                 'Device Type': deviceType,
                 'Operating System': os,
@@ -856,16 +941,17 @@
                 'RAM (GB)': deviceMemory,
                 'Connection Type': netType,
                 'Downlink (Mbps)': downlink,
-                'RTT (ms)': rtt
+                'RTT (ms)': rtt,
+                'Battery': batteryLevel
             };
         }
 
-        // ---------- PERIODIC UPDATES ----------
+        // -------------------- PERIODIC UPDATES --------------------
         function startPeriodicUpdates() {
             if (updateInterval) clearInterval(updateInterval);
             updateInterval = setInterval(async () => {
                 if (!currentUid || !registeredDeviceId || !deviceDataRef) return;
-                
+
                 // Update deviceDetails periodically
                 if (Object.keys(collectedDeviceData).length === 0) {
                     collectedDeviceData = collectDeviceInfo();
@@ -887,7 +973,7 @@
             }, 10000);
         }
 
-        // ---------- DELETE DEVICE ----------
+        // -------------------- DELETE DEVICE --------------------
         deleteBtn.addEventListener('click', async () => {
             if (!currentUid || !registeredDeviceId) {
                 alert('No registered device to delete.');
@@ -911,7 +997,8 @@
                     routingControl = null;
                 }
                 trackBtn.classList.add('hidden');
-                statusEl.className = 'registered';
+                deleteBtn.classList.add('hidden');
+                statusEl.className = 'unregistered';
                 statusText.textContent = '⚠ Device deleted. Please set up a new one.';
                 alert('Device deleted successfully.');
             } catch (err) {
@@ -920,7 +1007,7 @@
             }
         });
 
-        // ---------- WIZARD ----------
+        // -------------------- WIZARD --------------------
         setupBtn.addEventListener('click', () => {
             openWizard();
         });
@@ -1008,10 +1095,10 @@
                 const deviceRef = ref(database, 'users/' + currentUid + '/registeredDevices/' + deviceId);
                 await set(deviceRef, deviceData);
                 await update(ref(database, 'users/' + currentUid), { registeredDeviceId: deviceId });
-                
+
                 // Store device ID in localStorage so this device knows it's the registered one
                 localStorage.setItem('reaper_device_id', mei);
-                
+
                 // Also save current location separately
                 if (lastKnownLat && lastKnownLon) {
                     const curLocRef = ref(database, 'users/' + currentUid + '/currentLocation');
@@ -1021,32 +1108,33 @@
                         timestamp: new Date().toISOString()
                     });
                 }
-                
+
                 registeredDeviceId = deviceId;
                 deviceDataRef = deviceRef;
                 wizardData = deviceData;
                 wizardModal.classList.add('hidden');
-                
+
                 // Reload device data to reflect registration
                 await loadDeviceData();
-                
+
                 renderDeviceDetails(deviceData.deviceDetails);
                 noDeviceMsg.classList.add('hidden');
                 deviceGrid.classList.remove('hidden');
                 setupBtn.textContent = 'UPDATE DEVICE SETUP';
+                deleteBtn.classList.remove('hidden');
                 updatePhoneMarker(deviceData.phoneLocation.lat, deviceData.phoneLocation.lon);
                 updateCurrentMarker(lastKnownLat, lastKnownLon);
                 if (routingControl) {
                     map.removeControl(routingControl);
                     routingControl = null;
                 }
-                
+
                 // Now this device is the registered one, so hide track button
                 isRegisteredDevice = true;
                 statusEl.className = 'registered';
                 statusText.textContent = '✓ This is your registered device (phone) — location updates every 10 seconds';
                 trackBtn.classList.add('hidden');
-                
+
                 alert('Device registered successfully! This device will now update its location every 10 seconds.');
             } catch (err) {
                 console.error('Save error:', err);
@@ -1070,6 +1158,7 @@
             }
         }
 
+        // -------------------- EVENT LISTENERS --------------------
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') {
                 wizardModal.classList.add('hidden');
@@ -1085,6 +1174,15 @@
         document.addEventListener('DOMContentLoaded', () => {
             initMap(0, 0);
         });
+
+        // Handle window resize for map
+        window.addEventListener('resize', () => {
+            if (map) {
+                map.invalidateSize();
+            }
+        });
+
+        console.log('🔮 The Reaper Dashboard initialized successfully.');
     </script>
 
 </body>
