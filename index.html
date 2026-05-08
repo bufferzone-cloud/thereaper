@@ -44,7 +44,7 @@
             pointer-events: none;
         }
 
-        /* ---------- NO CONTAINER — EVERYTHING FLOATS ---------- */
+        /* ---------- FLOATING ROOT ---------- */
         .floating-root {
             width: 100%;
             max-width: 780px;
@@ -57,7 +57,7 @@
             position: relative;
         }
 
-        /* ---------- LOGO — 4× BIGGER (MASSIVE) ---------- */
+        /* ---------- LOGO ---------- */
         .logo-mega {
             text-align: center;
             width: 100%;
@@ -80,7 +80,7 @@
             transform: scale(1.02);
         }
 
-        /* ---------- TYPOGRAPHY (floating) ---------- */
+        /* ---------- TYPOGRAPHY ---------- */
         .floating-title {
             font-family: 'Orbitron', sans-serif;
             font-size: clamp(2rem, 6vw, 3.8rem);
@@ -104,7 +104,7 @@
             margin: -4px 0 0 0;
         }
 
-        /* ---------- FLOATING FIELDS (no form, no container) ---------- */
+        /* ---------- FLOATING FIELDS ---------- */
         .float-field {
             width: 100%;
             max-width: 480px;
@@ -192,7 +192,7 @@
             color: #66f0ff;
         }
 
-        /* ---------- DEVICE GRID (floating) ---------- */
+        /* ---------- DEVICE GRID ---------- */
         .float-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(min(140px, 44%), 1fr));
@@ -238,7 +238,7 @@
             font-size: clamp(0.55rem, 0.8vw, 0.75rem);
         }
 
-        /* ---------- SCANNER (floating) ---------- */
+        /* ---------- SCANNER ---------- */
         .scanner-float {
             width: 100%;
             max-width: 480px;
@@ -263,7 +263,7 @@
             }
         }
 
-        /* ---------- IP DISPLAY (floating) ---------- */
+        /* ---------- IP DISPLAY ---------- */
         .float-ip {
             background: rgba(255, 255, 255, 0.02);
             padding: clamp(6px, 0.8vw, 10px);
@@ -279,7 +279,7 @@
             font-weight: 500;
         }
 
-        /* ---------- TWO-COLUMN FLOATING FOOTER ---------- */
+        /* ---------- TWO-COLUMN ROW ---------- */
         .float-row {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -293,7 +293,7 @@
             margin: 0;
         }
 
-        /* ---------- MODAL (floating) ---------- */
+        /* ---------- MODAL ---------- */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -393,7 +393,7 @@
             }
         }
 
-        /* ---------- floating page sections ---------- */
+        /* ---------- PAGE SECTIONS ---------- */
         .page-section {
             display: flex;
             flex-direction: column;
@@ -408,13 +408,12 @@
 </head>
 <body>
 
-    <!-- ===== FLOATING ROOT — NO CONTAINER ===== -->
+    <!-- ===== FLOATING ROOT ===== -->
     <div class="floating-root" id="app">
 
         <!-- ===== PAGE 1 : LOGIN ===== -->
         <div id="page-login" class="page-section">
             <div class="logo-mega">
-                <!-- Replace with your actual logo path -->
                 <img src="reaper.png" alt="The Reaper" />
             </div>
             <div class="floating-title">THE REAPER</div>
@@ -441,7 +440,7 @@
             <div class="logo-mega" style="margin-bottom:-6px;">
                 <img src="reaper.png" style="height:clamp(180px, 35vw, 500px);" alt="The Reaper" />
             </div>
-            <div class="floating-title" style="font-size:clamp(1.2rem,3vw,2.2rem);">DEVICE SCAN</div>
+            <div class="floating-title" style="font-size:clamp(1.2rem, 3vw, 2.2rem);">DEVICE SCAN</div>
             <div class="floating-sub" style="color:#00e5ff; -webkit-text-fill-color:#b0f0ff; font-weight:500;">Extracting all technical data …</div>
             <div class="scanner-float"></div>
 
@@ -466,7 +465,7 @@
             <div class="logo-mega" style="margin-bottom:-6px;">
                 <img src="reaper.png" style="height:clamp(180px, 35vw, 500px);" alt="The Reaper" />
             </div>
-            <div class="floating-title" style="font-size:clamp(1.2rem,3vw,2.2rem);">REGISTRATION</div>
+            <div class="floating-title" style="font-size:clamp(1.2rem, 3vw, 2.2rem);">REGISTRATION</div>
             <div class="floating-sub" style="color:#00e5ff; -webkit-text-fill-color:#b0f0ff; font-weight:500;">Secure your device with The Reaper</div>
 
             <div class="float-field">
@@ -498,10 +497,10 @@
         </div>
     </div>
 
-    <!-- ===== MODAL ===== -->
+    <!-- ===== CONFIRMATION MODAL ===== -->
     <div id="confirmation-modal" class="modal-overlay hidden">
         <div class="modal-box">
-            <div style="font-family:'Orbitron'; font-size:clamp(1.1rem,2.5vw,1.6rem); color:#00e5ff; margin-bottom:4px;">CONFIRM</div>
+            <div style="font-family:'Orbitron'; font-size:clamp(1.1rem, 2.5vw, 1.6rem); color:#00e5ff; margin-bottom:4px;">CONFIRM</div>
             <div id="modal-content">
                 <p>Verifying your details …</p>
             </div>
@@ -524,10 +523,16 @@
     </script>
 
     <script type="module">
+        // ============================================================
+        //  MODULE IMPORTS
+        // ============================================================
         import { initializeApp } from "firebase/app";
         import { getDatabase, ref, set } from "firebase/database";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from "firebase/auth";
 
+        // ============================================================
+        //  FIREBASE CONFIG
+        // ============================================================
         const firebaseConfig = {
             apiKey: "AIzaSyDye0P37QYNjtRRKh2_At84QCkKCqjceAQ",
             authDomain: "reaper-7b33d.firebaseapp.com",
@@ -543,17 +548,46 @@
         const database = getDatabase(app);
         const auth = getAuth(app);
 
+        // ============================================================
+        //  GLOBAL STATE
+        // ============================================================
         let collectedDeviceData = {};
         let registrationData = {};
         let publicIP = "Unknown";
 
-        // ---------- HELPERS ----------
+        // ============================================================
+        //  HELPER: SHOW PAGE
+        // ============================================================
         function showPage(id) {
             document.querySelectorAll('.page-section').forEach(el => el.classList.add('hidden'));
             document.getElementById(id).classList.remove('hidden');
         }
 
-        // ---------- LOGIN ----------
+        // ============================================================
+        //  HELPER: GENERATE UNIQUE DEVICE ID
+        // ============================================================
+        function generateDeviceId() {
+            const parts = [
+                navigator.userAgent,
+                navigator.hardwareConcurrency || '0',
+                navigator.deviceMemory || '0',
+                screen.width,
+                screen.height,
+                navigator.language || 'en'
+            ];
+            let hash = 0;
+            const str = parts.join('||');
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return 'device_' + Math.abs(hash).toString(16) + '_' + Date.now().toString(36);
+        }
+
+        // ============================================================
+        //  LOGIN HANDLER
+        // ============================================================
         document.getElementById('login-btn').addEventListener('click', async () => {
             const email = document.getElementById('login-email').value.trim();
             const pass = document.getElementById('login-pass').value.trim();
@@ -565,7 +599,6 @@
 
             try {
                 await signInWithEmailAndPassword(auth, email, pass);
-                // Successful login – redirect to reaper.html
                 window.location.href = 'reaper.html';
             } catch (error) {
                 console.error('Login error:', error);
@@ -578,7 +611,9 @@
             }
         });
 
-        // ---------- CREATE ACCOUNT → SCAN ----------
+        // ============================================================
+        //  CREATE ACCOUNT → SCAN
+        // ============================================================
         document.getElementById('create-account-btn').addEventListener('click', () => {
             showPage('page-scan');
             const grid = document.getElementById('device-grid');
@@ -586,7 +621,9 @@
             setTimeout(() => collectDeviceInfo(), 350);
         });
 
-        // ---------- COLLECT DEVICE INFO ----------
+        // ============================================================
+        //  COLLECT DEVICE INFO
+        // ============================================================
         async function collectDeviceInfo() {
             const ua = navigator.userAgent;
             let browserName = 'Unknown';
@@ -690,12 +727,16 @@
             }
         }
 
-        // ---------- PROCEED TO REGISTER ----------
+        // ============================================================
+        //  PROCEED TO REGISTER
+        // ============================================================
         document.getElementById('proceed-register-btn').addEventListener('click', () => {
             showPage('page-register');
         });
 
-        // ---------- REGISTRATION ----------
+        // ============================================================
+        //  REGISTRATION – CLICK
+        // ============================================================
         document.getElementById('register-btn').addEventListener('click', () => {
             const name = document.getElementById('reg-name').value.trim();
             const email = document.getElementById('reg-email').value.trim();
@@ -726,7 +767,9 @@
             modal.classList.remove('hidden');
         });
 
-        // ---------- MODAL CONTROLS ----------
+        // ============================================================
+        //  MODAL CONTROLS
+        // ============================================================
         document.getElementById('modal-cancel').addEventListener('click', () => {
             document.getElementById('confirmation-modal').classList.add('hidden');
         });
@@ -737,11 +780,17 @@
             const { name, email, phone, emergencyPhone, emergencyEmail, pass } = registrationData;
 
             try {
-                // 1. Create Firebase Auth user
+                // ---- 1. Create Firebase Auth user ----
                 const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
                 const uid = userCredential.user.uid;
 
-                // 2. Save user data to Realtime Database under the user's UID
+                // ---- 2. Generate a unique device ID ----
+                const deviceId = generateDeviceId();
+
+                // ---- 3. Store device ID in localStorage (for later comparison) ----
+                localStorage.setItem('reaper_device_id', deviceId);
+
+                // ---- 4. Build user data object ----
                 const userData = {
                     profile: {
                         name,
@@ -752,12 +801,14 @@
                     },
                     deviceInfo: collectedDeviceData,
                     network: { publicIP },
+                    registeredDeviceId: deviceId,
                     timestamp: new Date().toISOString()
                 };
 
+                // ---- 5. Save to Firebase Realtime Database ----
                 await set(ref(database, `users/${uid}`), userData);
 
-                // 3. Redirect to reaper.html
+                // ---- 6. Redirect to dashboard ----
                 window.location.href = 'reaper.html';
 
             } catch (error) {
@@ -771,14 +822,18 @@
             }
         });
 
-        // ---------- CLOSE MODAL ON OVERLAY ----------
+        // ============================================================
+        //  CLOSE MODAL ON OVERLAY CLICK
+        // ============================================================
         document.getElementById('confirmation-modal').addEventListener('click', (e) => {
             if (e.target === e.currentTarget) {
                 document.getElementById('confirmation-modal').classList.add('hidden');
             }
         });
 
-        // ---------- ENTER KEY ----------
+        // ============================================================
+        //  ENTER KEY SUPPORT
+        // ============================================================
         document.getElementById('login-pass').addEventListener('keydown', (e) => {
             if (e.key === 'Enter') document.getElementById('login-btn').click();
         });
