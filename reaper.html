@@ -8,14 +8,13 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet" />
     <style>
-        /* ─── RESET & FULLSCREEN ─── */
+        /* ---------- RESET & FULLSCREEN ---------- */
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Rajdhani', sans-serif;
         }
-
         html,
         body {
             width: 100%;
@@ -25,7 +24,7 @@
             color: #fff;
         }
 
-        /* ─── FULLSCREEN MAP ─── */
+        /* ---------- FULLSCREEN MAP ---------- */
         #map-container {
             position: fixed;
             top: 0;
@@ -39,7 +38,7 @@
             height: 100%;
         }
 
-        /* ─── FLOATING UI WRAPPER ─── */
+        /* ---------- FLOATING UI WRAPPER ---------- */
         .floating-ui {
             position: fixed;
             top: 0;
@@ -48,20 +47,19 @@
             height: 100%;
             z-index: 10;
             pointer-events: none;
-            /* allow clicks to pass through to map except on UI elements */
         }
         .floating-ui>* {
             pointer-events: auto;
         }
 
-        /* ─── HEADER (top center) ─── */
+        /* ---------- HEADER (top center) ---------- */
         .ui-header {
             position: absolute;
             top: 18px;
             left: 50%;
             transform: translateX(-50%);
             text-align: center;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.75);
             backdrop-filter: blur(12px);
             padding: 10px 28px 12px;
             border-radius: 16px;
@@ -82,50 +80,49 @@
         .ui-header .sub {
             font-size: clamp(0.6rem, 1vw, 0.8rem);
             color: #aaa;
-            margin-top: -2px;
             -webkit-text-fill-color: #aaa;
             letter-spacing: 0.15em;
         }
-        .ui-header .sub strong {
-            color: #00e5ff;
-            -webkit-text-fill-color: #00e5ff;
-            font-weight: 700;
-        }
 
-        /* ─── STATUS (top right) ─── */
+        /* ---------- STATUS MESSAGE (tiny, floating) ---------- */
         .ui-status {
             position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(0, 0, 0, 0.75);
+            top: 82px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
             backdrop-filter: blur(10px);
-            padding: 8px 18px;
+            padding: 4px 16px;
             border-radius: 30px;
-            font-size: clamp(0.6rem, 0.9vw, 0.75rem);
+            font-size: clamp(0.55rem, 0.8vw, 0.7rem);
             font-weight: 600;
             letter-spacing: 0.5px;
             border: 1px solid rgba(255, 255, 255, 0.06);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-            transition: all 0.3s;
-            max-width: 280px;
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+            transition: all 0.3s ease;
         }
         .ui-status.registered {
-            border-color: rgba(0, 229, 255, 0.3);
+            border-color: #00e5ff;
+            color: #00e5ff;
+            background: rgba(0, 229, 255, 0.08);
+        }
+        .ui-status.registered .status-icon {
             color: #00e5ff;
         }
-        .ui-status.other {
-            border-color: rgba(255, 200, 0, 0.3);
+        .ui-status.unregistered {
+            border-color: #ffcc00;
+            color: #ffcc00;
+            background: rgba(255, 200, 0, 0.08);
+        }
+        .ui-status.unregistered .status-icon {
             color: #ffcc00;
         }
-        .ui-status.unregistered {
-            border-color: rgba(255, 100, 100, 0.3);
-            color: #ff6666;
+        .ui-status .status-icon {
+            margin-right: 4px;
         }
 
-        /* ─── DEVICE DETAILS (bottom left) ─── */
+        /* ---------- DEVICE DETAILS (bottom left) ---------- */
         .ui-details {
             position: absolute;
             bottom: 24px;
@@ -138,7 +135,7 @@
             box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
             max-width: 340px;
             width: calc(100% - 48px);
-            max-height: 45vh;
+            max-height: 40vh;
             overflow: hidden;
             transition: max-height 0.4s ease;
         }
@@ -146,7 +143,6 @@
             font-family: 'Orbitron', sans-serif;
             font-size: clamp(0.6rem, 1vw, 0.75rem);
             color: #00e5ff;
-            letter-spacing: 0.1em;
             margin-bottom: 6px;
             display: flex;
             align-items: center;
@@ -201,7 +197,7 @@
             padding: 12px 0;
         }
 
-        /* ─── ACTION BUTTONS (bottom center) ─── */
+        /* ---------- ACTION BUTTONS (bottom center) ---------- */
         .ui-actions {
             position: absolute;
             bottom: 24px;
@@ -239,20 +235,6 @@
             border-color: #00e5ff;
             box-shadow: 0 0 30px rgba(0, 229, 255, 0.08);
         }
-        .ui-actions .btn.danger {
-            border-color: rgba(255, 70, 70, 0.25);
-            color: #ff5555;
-        }
-        .ui-actions .btn.danger:hover {
-            background: rgba(255, 70, 70, 0.12);
-            border-color: #ff5555;
-            box-shadow: 0 0 30px rgba(255, 70, 70, 0.08);
-        }
-        .ui-actions .btn.hidden {
-            display: none !important;
-        }
-
-        /* ─── TRACK BUTTON (special glow) ─── */
         .ui-actions .btn-track {
             border-color: rgba(0, 229, 255, 0.5);
             background: rgba(0, 229, 255, 0.08);
@@ -263,169 +245,11 @@
             border-color: #00e5ff;
             box-shadow: 0 0 40px rgba(0, 229, 255, 0.15);
         }
-
-        /* ─── MODAL (floating on top) ─── */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 100;
-            padding: 20px;
-        }
-        .modal-box {
-            background: rgba(8, 8, 8, 0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(0, 229, 255, 0.15);
-            padding: clamp(20px, 3vw, 32px);
-            max-width: 94%;
-            width: 520px;
-            border-radius: 20px;
-            box-shadow: 0 20px 80px rgba(0, 0, 0, 0.8);
-            max-height: 90vh;
-            overflow-y: auto;
-        }
-        .modal-box .modal-title {
-            font-family: 'Orbitron', sans-serif;
-            font-size: clamp(1.1rem, 2vw, 1.5rem);
-            text-align: center;
-            color: #00e5ff;
-            margin-bottom: 4px;
-        }
-        .step-dots {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin: 10px 0 16px;
-        }
-        .step-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            background: #333;
-            transition: all 0.3s;
-        }
-        .step-dot.active {
-            background: #00e5ff;
-            transform: scale(1.3);
-            box-shadow: 0 0 16px rgba(0, 229, 255, 0.3);
-        }
-        .wizard-step .field {
-            margin-bottom: 10px;
-        }
-        .wizard-step .field label {
-            display: block;
-            color: #888;
-            font-size: 0.6rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 2px;
-        }
-        .wizard-step .field input {
-            width: 100%;
-            padding: 8px 10px;
-            background: rgba(255, 255, 255, 0.04);
-            border: none;
-            border-bottom: 1px solid rgba(0, 229, 255, 0.2);
-            color: #fff;
-            font-size: 0.85rem;
-            outline: none;
-            border-radius: 0;
-            transition: border-color 0.3s;
-        }
-        .wizard-step .field input:focus {
-            border-bottom-color: #00e5ff;
-            background: rgba(255, 255, 255, 0.04);
-        }
-        .wizard-nav {
-            display: flex;
-            justify-content: space-between;
-            gap: 10px;
-            margin-top: 14px;
-        }
-        .wizard-nav button {
-            padding: 8px 18px;
-            background: transparent;
-            border: 1px solid rgba(0, 229, 255, 0.2);
-            color: #00e5ff;
-            font-weight: 600;
-            font-size: 0.75rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            border-radius: 30px;
-            cursor: pointer;
-            transition: all 0.25s;
-            flex: 1;
-        }
-        .wizard-nav button:hover {
-            background: rgba(0, 229, 255, 0.08);
-            border-color: #00e5ff;
-        }
-        .wizard-nav button.primary {
-            background: #00e5ff;
-            color: #000;
-            border-color: #00e5ff;
-        }
-        .wizard-nav button.primary:hover {
-            background: #66f0ff;
-        }
-        .wizard-nav button.hidden {
+        .btn.hidden {
             display: none !important;
         }
 
-        .phone-frame-mini {
-            width: 140px;
-            height: 240px;
-            margin: 0 auto 10px;
-            border-radius: 24px;
-            border: 4px solid #1a1a1a;
-            background: #0a0a0a;
-            padding: 10px 6px;
-            position: relative;
-            box-shadow: 0 0 30px rgba(0, 229, 255, 0.03);
-        }
-        .phone-frame-mini .notch {
-            width: 60px;
-            height: 14px;
-            background: #000;
-            border-radius: 0 0 8px 8px;
-            margin: -10px auto 4px;
-        }
-        .phone-frame-mini .screen {
-            background: #111;
-            border-radius: 12px;
-            padding: 8px 10px;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-        .phone-frame-mini .screen input {
-            background: rgba(255, 255, 255, 0.05);
-            border: none;
-            border-bottom: 1px solid #00e5ff;
-            color: #fff;
-            padding: 6px 2px;
-            font-size: 0.8rem;
-            outline: none;
-            width: 100%;
-            text-align: center;
-        }
-        .phone-frame-mini .screen input::placeholder {
-            color: #444;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        /* ─── RESPONSIVE ─── */
+        /* ---------- RESPONSIVE ---------- */
         @media (max-width: 640px) {
             .ui-header {
                 top: 12px;
@@ -434,11 +258,9 @@
                 white-space: normal;
             }
             .ui-status {
-                top: 12px;
-                right: 12px;
-                padding: 4px 12px;
-                font-size: 0.55rem;
-                max-width: 160px;
+                top: 68px;
+                font-size: 0.5rem;
+                padding: 2px 12px;
                 white-space: nowrap;
             }
             .ui-details {
@@ -448,18 +270,17 @@
                 width: auto;
                 max-width: unset;
                 padding: 10px 12px 12px;
-                max-height: 30vh;
+                max-height: 25vh;
             }
             .device-grid {
                 grid-template-columns: 1fr 1fr;
                 gap: 3px 6px;
-                max-height: 20vh;
+                max-height: 18vh;
             }
             .ui-actions {
                 bottom: 12px;
                 padding: 6px 12px;
                 gap: 6px;
-                border-radius: 30px;
                 width: calc(100% - 24px);
             }
             .ui-actions .btn {
@@ -467,32 +288,10 @@
                 font-size: 0.55rem;
                 letter-spacing: 0.5px;
             }
-            .modal-box {
-                padding: 16px;
-            }
-            .phone-frame-mini {
-                width: 100px;
-                height: 170px;
-                padding: 6px 4px;
-            }
-            .phone-frame-mini .notch {
-                width: 40px;
-                height: 10px;
-                margin: -6px auto 2px;
-            }
-            .phone-frame-mini .screen input {
-                font-size: 0.6rem;
-                padding: 4px 2px;
-            }
         }
         @media (max-width: 400px) {
             .ui-header h1 {
                 font-size: 0.9rem;
-            }
-            .ui-status {
-                font-size: 0.45rem;
-                padding: 2px 8px;
-                max-width: 120px;
             }
             .device-grid {
                 grid-template-columns: 1fr;
@@ -503,7 +302,7 @@
             }
         }
 
-        /* ─── Leaflet routing custom ─── */
+        /* ---------- LEAFLET ROUTING HIDE ---------- */
         .leaflet-routing-container {
             display: none !important;
         }
@@ -516,109 +315,56 @@
         .leaflet-routing-error {
             display: none !important;
         }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
 <body>
 
-    <!-- ─── FULLSCREEN MAP ─── -->
+    <!-- ===== FULLSCREEN MAP ===== -->
     <div id="map-container">
         <div id="map"></div>
     </div>
 
-    <!-- ─── FLOATING UI ─── -->
+    <!-- ===== FLOATING UI ===== -->
     <div class="floating-ui">
 
-        <!-- Header -->
+        <!-- HEADER -->
         <div class="ui-header">
             <h1>THE REAPER</h1>
-            <div class="sub">Hi <strong id="user-name-display">User</strong> · tracking active</div>
+            <div class="sub">tracking active</div>
         </div>
 
-        <!-- Status -->
+        <!-- STATUS MESSAGE -->
         <div class="ui-status unregistered" id="device-status">
-            <span id="status-text">⏳ Loading...</span>
+            <span class="status-icon">⏳</span>
+            <span id="status-text">Checking device…</span>
         </div>
 
-        <!-- Device details (bottom left) -->
+        <!-- DEVICE DETAILS (bottom left) -->
         <div class="ui-details" id="ui-details">
             <div class="title">⚡ <span>DEVICE DETAILS</span></div>
             <div id="device-details-grid" class="device-grid"></div>
-            <div id="no-device-message" class="no-device-msg">No registered device. Set one up.</div>
+            <div id="no-device-message" class="no-device-msg">No registered device details found.</div>
         </div>
 
-        <!-- Action buttons (bottom center) -->
+        <!-- ACTION BUTTONS (bottom center) -->
         <div class="ui-actions">
-            <button class="btn" id="setup-device-btn">SETUP</button>
-            <button class="btn btn-track hidden" id="track-device-btn">📍 TRACK</button>
-            <button class="btn danger hidden" id="delete-device-btn">DELETE</button>
+            <button class="btn btn-track hidden" id="track-device-btn">📍 TRACK DEVICE</button>
             <button class="btn" id="logout-btn">LOGOUT</button>
         </div>
 
     </div>
 
-    <!-- ─── MODAL ─── -->
-    <div id="wizard-modal" class="modal-overlay hidden">
-        <div class="modal-box">
-            <div class="modal-title">🔧 DEVICE SETUP</div>
-            <div class="step-dots">
-                <span class="step-dot active" id="dot-1"></span>
-                <span class="step-dot" id="dot-2"></span>
-                <span class="step-dot" id="dot-3"></span>
-            </div>
+    <!-- ===== MAP & ROUTING LIBRARIES ===== -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js">
+    </script>
 
-            <div id="wizard-step-1" class="wizard-step">
-                <div style="text-align:center;color:#888;font-size:0.7rem;margin-bottom:6px;">Step 1 · Device Identity</div>
-                <div class="phone-frame-mini">
-                    <div class="notch"></div>
-                    <div class="screen">
-                        <label style="color:#aaa;font-size:0.5rem;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;display:block;">MEI / IMEI</label>
-                        <input type="text" id="mei-input" placeholder="Enter unique ID" />
-                    </div>
-                </div>
-                <p style="color:#555;text-align:center;font-size:0.65rem;">This identifies your device uniquely.</p>
-            </div>
-
-            <div id="wizard-step-2" class="wizard-step hidden">
-                <div style="text-align:center;color:#888;font-size:0.7rem;margin-bottom:6px;">Step 2 · Contact & Address</div>
-                <div class="field">
-                    <label>Full Name</label>
-                    <input type="text" id="wiz-name" placeholder="John Doe" />
-                </div>
-                <div class="field">
-                    <label>Address</label>
-                    <input type="text" id="wiz-address" placeholder="123 Cyber St, Tech City" />
-                </div>
-                <div class="field">
-                    <label>City / Region</label>
-                    <input type="text" id="wiz-city" placeholder="Metropolis" />
-                </div>
-            </div>
-
-            <div id="wizard-step-3" class="wizard-step hidden">
-                <div style="text-align:center;color:#888;font-size:0.7rem;margin-bottom:6px;">Step 3 · Extra Security</div>
-                <div class="field">
-                    <label>Email</label>
-                    <input type="email" id="wiz-email" placeholder="your@email.com" />
-                </div>
-                <div class="field">
-                    <label>Phone Number</label>
-                    <input type="tel" id="wiz-phone" placeholder="+1 555 000 000" />
-                </div>
-                <div class="field">
-                    <label>Alternative Contact</label>
-                    <input type="text" id="wiz-alt" placeholder="Emergency contact" />
-                </div>
-            </div>
-
-            <div class="wizard-nav">
-                <button id="wizard-prev">← BACK</button>
-                <button id="wizard-next" class="primary">NEXT →</button>
-                <button id="wizard-finish" class="primary hidden">FINISH</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ─── SCRIPTS ─── -->
+    <!-- ===== FIREBASE IMPORTS ===== -->
     <script type="importmap">
         {
             "imports": {
@@ -629,16 +375,18 @@
         }
     </script>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
-    </script>
-    <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js">
-    </script>
-
+    <!-- ===== MAIN APP ===== -->
     <script type="module">
+        // ================================================================
+        //  MODULE IMPORTS
+        // ================================================================
         import { initializeApp } from "firebase/app";
-        import { getDatabase, ref, set, get, remove, update } from "firebase/database";
+        import { getDatabase, ref, get, set, update } from "firebase/database";
         import { getAuth, onAuthStateChanged, signOut } from "firebase/auth";
 
+        // ================================================================
+        //  FIREBASE CONFIG
+        // ================================================================
         const firebaseConfig = {
             apiKey: "AIzaSyDye0P37QYNjtRRKh2_At84QCkKCqjceAQ",
             authDomain: "reaper-7b33d.firebaseapp.com",
@@ -654,153 +402,140 @@
         const database = getDatabase(app);
         const auth = getAuth(app);
 
-        let currentUser = null;
-        let currentUid = null;
-        let registeredDeviceId = null;
-        let deviceDataRef = null;
+        // ================================================================
+        //  GLOBAL STATE
+        // ================================================================
         let map = null;
         let phoneMarker = null;
         let currentMarker = null;
         let routingControl = null;
-        let collectedDeviceData = {};
         let lastKnownLat = 0;
         let lastKnownLon = 0;
-        let updateInterval = null;
-        let wizardStep = 1;
-        let wizardData = {};
-        let isRegisteredDevice = false;
         let locationWatchId = null;
+        let updateInterval = null;
+        let isRegisteredDevice = false;
+        let currentUid = null;
+        let registeredDeviceId = null;
+        let currentDeviceId = null;
+        let deviceDataRef = null;
 
-        const userNameDisplay = document.getElementById('user-name-display');
-        const deviceGrid = document.getElementById('device-details-grid');
-        const noDeviceMsg = document.getElementById('no-device-message');
-        const setupBtn = document.getElementById('setup-device-btn');
-        const deleteBtn = document.getElementById('delete-device-btn');
-        const trackBtn = document.getElementById('track-device-btn');
-        const logoutBtn = document.getElementById('logout-btn');
-        const wizardModal = document.getElementById('wizard-modal');
+        // DOM refs
         const statusEl = document.getElementById('device-status');
         const statusText = document.getElementById('status-text');
+        const trackBtn = document.getElementById('track-device-btn');
+        const deviceGrid = document.getElementById('device-details-grid');
+        const noDeviceMsg = document.getElementById('no-device-message');
+        const logoutBtn = document.getElementById('logout-btn');
 
-        // ─── AUTH ───
-        function showLoginRedirect() {
-            alert('No authenticated user found. Please log in again.');
-            window.location.href = 'index.html';
-        }
-
+        // ================================================================
+        //  AUTH STATE LISTENER
+        // ================================================================
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                currentUser = user;
                 currentUid = user.uid;
-                const name = user.displayName || user.email || 'User';
-                userNameDisplay.textContent = name;
-                await loadUserDevice();
+                currentDeviceId = localStorage.getItem('reaper_device_id');
+                await loadDeviceData();
                 startLocationWatch();
                 startPeriodicUpdates();
             } else {
-                showLoginRedirect();
-            }
-        });
-
-        // ─── LOGOUT ───
-        logoutBtn.addEventListener('click', async () => {
-            try {
-                if (updateInterval) clearInterval(updateInterval);
-                if (locationWatchId) navigator.geolocation.clearWatch(locationWatchId);
-                await signOut(auth);
-                localStorage.removeItem('reaper_device_id');
+                alert('Please log in again.');
                 window.location.href = 'index.html';
-            } catch (err) {
-                console.error('Logout error:', err);
-                alert('Error signing out.');
             }
         });
 
-        // ─── LOAD DEVICE ───
-        async function loadUserDevice() {
+        // ================================================================
+        //  LOGOUT HANDLER
+        // ================================================================
+        logoutBtn.addEventListener('click', async () => {
+            if (updateInterval) clearInterval(updateInterval);
+            if (locationWatchId) navigator.geolocation.clearWatch(locationWatchId);
+            await signOut(auth);
+            window.location.href = 'index.html';
+        });
+
+        // ================================================================
+        //  LOAD DEVICE DATA & CHECK STATUS
+        // ================================================================
+        async function loadDeviceData() {
             if (!currentUid) return;
+
             const userRef = ref(database, 'users/' + currentUid);
+
             try {
                 const snap = await get(userRef);
+
                 if (snap.exists()) {
                     const data = snap.val();
-                    const devices = data.registeredDevices || {};
-                    const deviceIds = Object.keys(devices);
-                    if (deviceIds.length > 0) {
-                        registeredDeviceId = deviceIds[0];
-                        deviceDataRef = ref(database, 'users/' + currentUid + '/registeredDevices/' + registeredDeviceId);
-                        await loadDeviceData();
-                        setupBtn.textContent = 'UPDATE';
-                        deleteBtn.classList.remove('hidden');
-                    } else {
-                        setUnregisteredState();
-                    }
-                } else {
-                    setUnregisteredState();
-                }
-            } catch (err) {
-                console.error('Error loading user device:', err);
-                setUnregisteredState();
-            }
-        }
+                    const registeredId = data.registeredDeviceId || null;
+                    registeredDeviceId = registeredId;
 
-        function setUnregisteredState() {
-            noDeviceMsg.classList.remove('hidden');
-            deviceGrid.innerHTML = '';
-            registeredDeviceId = null;
-            deviceDataRef = null;
-            setupBtn.textContent = 'SETUP';
-            deleteBtn.classList.add('hidden');
-            trackBtn.classList.add('hidden');
-            statusEl.className = 'unregistered';
-            statusText.textContent = '⚠ No device registered';
-        }
-
-        async function loadDeviceData() {
-            if (!deviceDataRef) return;
-            try {
-                const snap = await get(deviceDataRef);
-                if (snap.exists()) {
-                    const data = snap.val();
-                    wizardData = data;
-                    renderDeviceDetails(data.deviceDetails || {});
-
-                    const storedId = localStorage.getItem('reaper_device_id');
-                    const dbId = data.mei || '';
-
-                    if (storedId && dbId && storedId === dbId) {
+                    // ---- 1. Determine device status ----
+                    if (registeredId && currentDeviceId && registeredId === currentDeviceId) {
                         isRegisteredDevice = true;
-                        statusEl.className = 'registered';
-                        statusText.textContent = '✓ This is your registered device';
+                        statusEl.className = 'ui-status registered';
+                        statusText.textContent = '✓ User is logged in on registered device';
                         trackBtn.classList.add('hidden');
+                    } else if (registeredId) {
+                        isRegisteredDevice = false;
+                        statusEl.className = 'ui-status unregistered';
+                        statusText.textContent = '⚠ User logged in on an unregistered device';
+                        trackBtn.classList.remove('hidden');
                     } else {
                         isRegisteredDevice = false;
-                        statusEl.className = 'other';
-                        statusText.textContent = '⚠ Viewing phone location';
-                        trackBtn.classList.remove('hidden');
+                        statusEl.className = 'ui-status unregistered';
+                        statusText.textContent = '⚠ No registered device found for this user';
+                        trackBtn.classList.add('hidden');
                     }
 
+                    // ---- 2. Render device details ----
+                    if (data.deviceInfo) {
+                        renderDeviceDetails(data.deviceInfo);
+                        noDeviceMsg.classList.add('hidden');
+                        deviceGrid.classList.remove('hidden');
+                    } else {
+                        noDeviceMsg.classList.remove('hidden');
+                        deviceGrid.innerHTML = '';
+                    }
+
+                    // ---- 3. Phone location (from Firebase) ----
                     const phoneLoc = data.phoneLocation || { lat: 0, lon: 0 };
                     updatePhoneMarker(phoneLoc.lat, phoneLoc.lon);
+
+                    // ---- 4. Current device location ----
                     if (lastKnownLat && lastKnownLon) {
                         updateCurrentMarker(lastKnownLat, lastKnownLon);
                     }
 
-                    noDeviceMsg.classList.add('hidden');
-                    deviceGrid.classList.remove('hidden');
+                    // ---- 5. Setup device reference for updates ----
+                    if (registeredId) {
+                        deviceDataRef = ref(database, 'users/' + currentUid + '/registeredDevices/' + registeredId);
+                    }
+
                 } else {
-                    setUnregisteredState();
+                    // No user data exists
+                    noDeviceMsg.classList.remove('hidden');
+                    deviceGrid.innerHTML = '';
+                    statusEl.className = 'ui-status unregistered';
+                    statusText.textContent = '⚠ No device data found';
+                    trackBtn.classList.add('hidden');
                 }
+
             } catch (err) {
                 console.error('Error loading device data:', err);
-                setUnregisteredState();
+                statusEl.className = 'ui-status unregistered';
+                statusText.textContent = '⚠ Error loading device data';
+                trackBtn.classList.add('hidden');
             }
         }
 
+        // ================================================================
+        //  RENDER DEVICE DETAILS
+        // ================================================================
         function renderDeviceDetails(details) {
             deviceGrid.innerHTML = '';
             if (!details || Object.keys(details).length === 0) {
-                deviceGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#666;font-size:0.6rem;">No details</div>';
+                deviceGrid.innerHTML =
+                    '<div style="grid-column:1/-1;text-align:center;color:#666;font-size:0.6rem;">No device details available</div>';
                 return;
             }
             for (const [key, value] of Object.entries(details)) {
@@ -811,7 +546,9 @@
             }
         }
 
-        // ─── MAP ───
+        // ================================================================
+        //  MAP INITIALIZATION
+        // ================================================================
         function initMap(lat, lon) {
             if (map) return;
             map = L.map('map', {
@@ -825,13 +562,24 @@
             if (lat && lon) updatePhoneMarker(lat, lon);
         }
 
+        // ================================================================
+        //  UPDATE PHONE MARKER (📱)
+        // ================================================================
         function updatePhoneMarker(lat, lon) {
-            if (!map) { initMap(lat, lon); return; }
+            if (!map) {
+                initMap(lat, lon);
+                return;
+            }
             if (phoneMarker) {
                 phoneMarker.setLatLng([lat, lon]);
             } else {
-                const icon = L.divIcon({ html: '📱', iconSize: [28, 28], iconAnchor: [14, 28] });
-                phoneMarker = L.marker([lat, lon], { icon }).addTo(map).bindPopup('<b>Registered Phone</b>');
+                const icon = L.divIcon({
+                    html: '📱',
+                    iconSize: [28, 28],
+                    iconAnchor: [14, 28]
+                });
+                phoneMarker = L.marker([lat, lon], { icon }).addTo(map)
+                    .bindPopup('<b>Registered Phone</b><br>Last known location');
             }
             if (currentMarker) {
                 const cur = currentMarker.getLatLng();
@@ -842,13 +590,24 @@
             }
         }
 
+        // ================================================================
+        //  UPDATE CURRENT MARKER (📍)
+        // ================================================================
         function updateCurrentMarker(lat, lon) {
-            if (!map) { initMap(lat, lon); return; }
+            if (!map) {
+                initMap(lat, lon);
+                return;
+            }
             if (currentMarker) {
                 currentMarker.setLatLng([lat, lon]);
             } else {
-                const icon = L.divIcon({ html: '📍', iconSize: [28, 28], iconAnchor: [14, 28] });
-                currentMarker = L.marker([lat, lon], { icon }).addTo(map).bindPopup('<b>You are here</b>');
+                const icon = L.divIcon({
+                    html: '📍',
+                    iconSize: [28, 28],
+                    iconAnchor: [14, 28]
+                });
+                currentMarker = L.marker([lat, lon], { icon }).addTo(map)
+                    .bindPopup('<b>You are here</b><br>Current device location');
             }
             if (phoneMarker) {
                 const phone = phoneMarker.getLatLng();
@@ -859,254 +618,215 @@
             }
         }
 
+        // ================================================================
+        //  GET PHONE LOCATION
+        // ================================================================
         function getPhoneLocation() {
             if (!phoneMarker) return null;
             const p = phoneMarker.getLatLng();
             return { lat: p.lat, lon: p.lng };
         }
 
+        // ================================================================
+        //  GET CURRENT LOCATION
+        // ================================================================
         function getCurrentLocation() {
             if (currentMarker) {
                 const p = currentMarker.getLatLng();
                 return { lat: p.lat, lon: p.lng };
             }
-            if (lastKnownLat && lastKnownLon) return { lat: lastKnownLat, lon: lastKnownLon };
+            if (lastKnownLat && lastKnownLon) {
+                return { lat: lastKnownLat, lon: lastKnownLon };
+            }
             return null;
         }
 
-        // ─── TRACK ───
+        // ================================================================
+        //  TRACK DEVICE BUTTON — draws route between both devices
+        // ================================================================
         trackBtn.addEventListener('click', async () => {
-            if (!map) { alert('Map not ready.'); return; }
-            const phone = getPhoneLocation();
-            const current = getCurrentLocation();
-            if (!phone || !current) { alert('Missing location data.'); return; }
+            if (!map) {
+                alert('Map is not ready yet.');
+                return;
+            }
 
-            if (routingControl) { map.removeControl(routingControl);
-                routingControl = null; }
+            const phoneLoc = getPhoneLocation();
+            const currentLoc = getCurrentLocation();
 
-            const bounds = L.latLngBounds([current.lat, current.lon], [phone.lat, phone.lon]);
+            if (!phoneLoc || !currentLoc) {
+                alert('Missing location data for either the registered device or your current device.');
+                return;
+            }
+
+            // Clear any existing route
+            if (routingControl) {
+                map.removeControl(routingControl);
+                routingControl = null;
+            }
+
+            // Zoom to fit both points
+            const bounds = L.latLngBounds([currentLoc.lat, currentLoc.lon], [phoneLoc.lat, phoneLoc.lon]);
             map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+
+            // Attempt to draw a route
+            const waypoints = [
+                L.latLng(currentLoc.lat, currentLoc.lon),
+                L.latLng(phoneLoc.lat, phoneLoc.lon)
+            ];
 
             try {
                 routingControl = L.Routing.control({
-                    waypoints: [L.latLng(current.lat, current.lon), L.latLng(phone.lat, phone.lon)],
-                    lineOptions: { styles: [{ color: '#00e5ff', weight: 3, opacity: 0.8 }] },
+                    waypoints: waypoints,
+                    lineOptions: {
+                        styles: [{ color: '#00e5ff', weight: 3, opacity: 0.8 }]
+                    },
                     showAlternatives: false,
                     fitSelectedRoutes: false,
-                    router: L.Routing.osrmv1({ serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1' }),
-                    createMarker: () => null
+                    router: L.Routing.osrmv1({
+                        serviceUrl: 'https://routing.openstreetmap.de/routed-foot/route/v1'
+                    }),
+                    createMarker: function(i, waypoint, n) {
+                        return null; // Don't create extra markers
+                    }
                 }).addTo(map);
-            } catch (_) {}
+
+                routingControl.on('routingerror', function(e) {
+                    console.warn('Routing error:', e.error);
+                    // Map is already zoomed to both points
+                });
+
+            } catch (err) {
+                console.warn('Error creating routing control:', err);
+            }
         });
 
-        // ─── LOCATION WATCH ───
+        // ================================================================
+        //  LOCATION WATCH — tracks current device position
+        // ================================================================
         function startLocationWatch() {
             if (!navigator.geolocation) return;
             if (locationWatchId) navigator.geolocation.clearWatch(locationWatchId);
+
             locationWatchId = navigator.geolocation.watchPosition(
                 (pos) => {
                     lastKnownLat = pos.coords.latitude;
                     lastKnownLon = pos.coords.longitude;
                     updateCurrentMarker(lastKnownLat, lastKnownLon);
-                    if (isRegisteredDevice && currentUid && deviceDataRef) {
+
+                    // If this is the registered device, update phoneLocation in Firebase
+                    if (isRegisteredDevice && currentUid && registeredDeviceId) {
                         const locRef = ref(database, 'users/' + currentUid + '/registeredDevices/' + registeredDeviceId +
                             '/phoneLocation');
-                        set(locRef, { lat: lastKnownLat, lon: lastKnownLon, timestamp: new Date().toISOString() }).catch(
-                        () => {});
+                        set(locRef, {
+                            lat: lastKnownLat,
+                            lon: lastKnownLon,
+                            timestamp: new Date().toISOString()
+                        }).catch(() => {});
                     }
+
+                    // Always save current location for other devices to see
                     if (currentUid) {
                         const curRef = ref(database, 'users/' + currentUid + '/currentLocation');
-                        set(curRef, { lat: lastKnownLat, lon: lastKnownLon, timestamp: new Date().toISOString() }).catch(
-                        () => {});
+                        set(curRef, {
+                            lat: lastKnownLat,
+                            lon: lastKnownLon,
+                            timestamp: new Date().toISOString()
+                        }).catch(() => {});
                     }
                 },
-                () => {}, { enableHighAccuracy: true, maximumAge: 5000, timeout: 10000 }
+                (err) => {
+                    console.warn('Location error:', err.message);
+                }, {
+                    enableHighAccuracy: true,
+                    maximumAge: 5000,
+                    timeout: 10000
+                }
             );
         }
 
-        // ─── PERIODIC UPDATES ───
+        // ================================================================
+        //  PERIODIC UPDATES — every 10 seconds
+        // ================================================================
         function startPeriodicUpdates() {
             if (updateInterval) clearInterval(updateInterval);
+
             updateInterval = setInterval(async () => {
-                if (!currentUid || !registeredDeviceId || !deviceDataRef) return;
-                if (Object.keys(collectedDeviceData).length === 0) collectedDeviceData = collectDeviceInfo();
+                if (!currentUid || !registeredDeviceId) return;
+
+                // Update user's lastSeen
                 try {
-                    await update(deviceDataRef, { deviceDetails: collectedDeviceData, lastUpdated: new Date()
-                            .toISOString() });
+                    const userRef = ref(database, 'users/' + currentUid);
+                    await update(userRef, { lastSeen: new Date().toISOString() });
                 } catch (_) {}
-                try {
-                    await update(ref(database, 'users/' + currentUid), { lastSeen: new Date().toISOString() });
-                } catch (_) {}
+
+                // If this is the registered device, also update device details
+                if (isRegisteredDevice && deviceDataRef) {
+                    try {
+                        const details = collectDeviceInfo();
+                        await update(deviceDataRef, {
+                            deviceDetails: details,
+                            lastUpdated: new Date().toISOString()
+                        });
+                    } catch (_) {}
+                }
             }, 10000);
         }
 
+        // ================================================================
+        //  COLLECT DEVICE INFO (for periodic updates)
+        // ================================================================
         function collectDeviceInfo() {
             const ua = navigator.userAgent;
-            let b = 'Unknown',
-                o = 'Unknown',
-                t = 'Desktop';
-            if (ua.indexOf('Firefox') > -1) b = 'Firefox';
-            else if (ua.indexOf('Chrome') > -1 && ua.indexOf('Edg') === -1) b = 'Chrome';
-            else if (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1) b = 'Safari';
-            else if (ua.indexOf('Edg') > -1) b = 'Edge';
-            if (ua.indexOf('Windows') > -1) o = 'Windows';
-            else if (ua.indexOf('Android') > -1) o = 'Android';
-            else if (ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) o = 'iOS';
-            else if (ua.indexOf('Mac') > -1) o = 'macOS';
-            else if (ua.indexOf('Linux') > -1) o = 'Linux';
-            if (/Mobi|Android|iPhone|iPad|iPod/i.test(ua)) t = /Tablet/i.test(ua) ? 'Tablet' : 'Mobile';
+            let browserName = 'Unknown';
+            if (ua.indexOf('Firefox') > -1) browserName = 'Firefox';
+            else if (ua.indexOf('Chrome') > -1 && ua.indexOf('Edg') === -1) browserName = 'Chrome';
+            else if (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1) browserName = 'Safari';
+            else if (ua.indexOf('Edg') > -1) browserName = 'Edge';
+
+            let os = 'Unknown';
+            if (ua.indexOf('Windows') > -1) os = 'Windows';
+            else if (ua.indexOf('Android') > -1) os = 'Android';
+            else if (ua.indexOf('iPhone') > -1 || ua.indexOf('iPad') > -1) os = 'iOS';
+            else if (ua.indexOf('Mac') > -1) os = 'macOS';
+            else if (ua.indexOf('Linux') > -1) os = 'Linux';
+
+            let deviceType = 'Desktop';
+            if (/Mobi|Android|iPhone|iPad|iPod/i.test(ua)) deviceType = /Tablet/i.test(ua) ? 'Tablet' : 'Mobile';
+
+            const screenInfo = `${screen.width} x ${screen.height}`;
+            const pixelDensity = window.devicePixelRatio;
+            const cpuCores = navigator.hardwareConcurrency || 'Unknown';
+            const deviceMemory = navigator.deviceMemory || 'Unknown';
+
             return {
-                'Device': t,
-                'OS': o,
-                'Browser': b,
-                'Screen': `${screen.width}×${screen.height}`,
-                'CPU Cores': navigator.hardwareConcurrency || '?',
-                'RAM (GB)': navigator.deviceMemory || '?'
+                'Device Type': deviceType,
+                'Operating System': os,
+                'Browser': browserName,
+                'Screen Res': screenInfo,
+                'Pixel Density': pixelDensity.toFixed(2),
+                'CPU Cores': cpuCores,
+                'RAM (GB)': deviceMemory
             };
         }
 
-        // ─── DELETE ───
-        deleteBtn.addEventListener('click', async () => {
-            if (!currentUid || !registeredDeviceId) { alert('No device to delete.'); return; }
-            if (!confirm('Delete this device? All data will be lost.')) return;
-            try {
-                await remove(deviceDataRef);
-                if (phoneMarker) { map.removeLayer(phoneMarker);
-                    phoneMarker = null; }
-                localStorage.removeItem('reaper_device_id');
-                registeredDeviceId = null;
-                deviceDataRef = null;
-                noDeviceMsg.classList.remove('hidden');
-                deviceGrid.innerHTML = '';
-                setupBtn.textContent = 'SETUP';
-                if (routingControl) { map.removeControl(routingControl);
-                    routingControl = null; }
-                trackBtn.classList.add('hidden');
-                deleteBtn.classList.add('hidden');
-                statusEl.className = 'unregistered';
-                statusText.textContent = '⚠ Device deleted';
-                alert('Device deleted.');
-            } catch (err) {
-                alert('Error deleting device.');
-            }
+        // ================================================================
+        //  INIT MAP ON DOM LOAD
+        // ================================================================
+        document.addEventListener('DOMContentLoaded', () => {
+            initMap(0, 0);
         });
 
-        // ─── WIZARD ───
-        setupBtn.addEventListener('click', () => openWizard());
-
-        function openWizard() {
-            wizardModal.classList.remove('hidden');
-            wizardStep = 1;
-            showWizardStep(1);
-            if (wizardData && wizardData.mei) {
-                document.getElementById('mei-input').value = wizardData.mei || '';
-                document.getElementById('wiz-name').value = wizardData.step2?.name || '';
-                document.getElementById('wiz-address').value = wizardData.step2?.address || '';
-                document.getElementById('wiz-city').value = wizardData.step2?.city || '';
-                document.getElementById('wiz-email').value = wizardData.step3?.email || '';
-                document.getElementById('wiz-phone').value = wizardData.step3?.phone || '';
-                document.getElementById('wiz-alt').value = wizardData.step3?.alt || '';
-            }
-        }
-
-        function showWizardStep(s) {
-            document.getElementById('wizard-step-1').classList.add('hidden');
-            document.getElementById('wizard-step-2').classList.add('hidden');
-            document.getElementById('wizard-step-3').classList.add('hidden');
-            document.getElementById('wizard-step-' + s).classList.remove('hidden');
-            for (let i = 1; i <= 3; i++) {
-                document.getElementById('dot-' + i).classList.toggle('active', i === s);
-            }
-            document.getElementById('wizard-prev').classList.toggle('hidden', s === 1);
-            document.getElementById('wizard-next').classList.toggle('hidden', s === 3);
-            document.getElementById('wizard-finish').classList.toggle('hidden', s !== 3);
-        }
-
-        document.getElementById('wizard-prev').addEventListener('click', () => { if (wizardStep > 1) { wizardStep--;
-                showWizardStep(wizardStep); } });
-        document.getElementById('wizard-next').addEventListener('click', () => { if (wizardStep < 3) { saveWizardStepData(
-                    wizardStep);
-                wizardStep++;
-                showWizardStep(wizardStep); } });
-
-        document.getElementById('wizard-finish').addEventListener('click', async () => {
-            saveWizardStepData(3);
-            const mei = document.getElementById('mei-input').value.trim();
-            if (!mei) { alert('MEI Number is required.'); return; }
-            const deviceData = {
-                mei,
-                step2: {
-                    name: document.getElementById('wiz-name').value.trim(),
-                    address: document.getElementById('wiz-address').value.trim(),
-                    city: document.getElementById('wiz-city').value.trim()
-                },
-                step3: {
-                    email: document.getElementById('wiz-email').value.trim(),
-                    phone: document.getElementById('wiz-phone').value.trim(),
-                    alt: document.getElementById('wiz-alt').value.trim()
-                },
-                deviceDetails: collectDeviceInfo(),
-                phoneLocation: { lat: lastKnownLat || 0, lon: lastKnownLon || 0, timestamp: new Date().toISOString() },
-                registeredAt: new Date().toISOString(),
-                lastUpdated: new Date().toISOString()
-            };
-            try {
-                const deviceRef = ref(database, 'users/' + currentUid + '/registeredDevices/' + mei);
-                await set(deviceRef, deviceData);
-                await update(ref(database, 'users/' + currentUid), { registeredDeviceId: mei });
-                localStorage.setItem('reaper_device_id', mei);
-                if (lastKnownLat && lastKnownLon) {
-                    await set(ref(database, 'users/' + currentUid + '/currentLocation'), { lat: lastKnownLat,
-                        lon: lastKnownLon, timestamp: new Date().toISOString() });
-                }
-                registeredDeviceId = mei;
-                deviceDataRef = deviceRef;
-                wizardData = deviceData;
-                wizardModal.classList.add('hidden');
-                await loadDeviceData();
-                renderDeviceDetails(deviceData.deviceDetails);
-                noDeviceMsg.classList.add('hidden');
-                deviceGrid.classList.remove('hidden');
-                setupBtn.textContent = 'UPDATE';
-                deleteBtn.classList.remove('hidden');
-                updatePhoneMarker(deviceData.phoneLocation.lat, deviceData.phoneLocation.lon);
-                updateCurrentMarker(lastKnownLat, lastKnownLon);
-                if (routingControl) { map.removeControl(routingControl);
-                    routingControl = null; }
-                isRegisteredDevice = true;
-                statusEl.className = 'registered';
-                statusText.textContent = '✓ This is your registered device';
-                trackBtn.classList.add('hidden');
-                alert('Device registered!');
-            } catch (err) {
-                alert('Error registering device.');
-            }
+        // ================================================================
+        //  HANDLE WINDOW RESIZE
+        // ================================================================
+        window.addEventListener('resize', () => {
+            if (map) map.invalidateSize();
         });
 
-        function saveWizardStepData(s) {
-            if (s === 1) wizardData.mei = document.getElementById('mei-input').value.trim();
-            else if (s === 2) {
-                if (!wizardData.step2) wizardData.step2 = {};
-                wizardData.step2.name = document.getElementById('wiz-name').value.trim();
-                wizardData.step2.address = document.getElementById('wiz-address').value.trim();
-                wizardData.step2.city = document.getElementById('wiz-city').value.trim();
-            } else if (s === 3) {
-                if (!wizardData.step3) wizardData.step3 = {};
-                wizardData.step3.email = document.getElementById('wiz-email').value.trim();
-                wizardData.step3.phone = document.getElementById('wiz-phone').value.trim();
-                wizardData.step3.alt = document.getElementById('wiz-alt').value.trim();
-            }
-        }
-
-        // ─── CLOSE MODAL ───
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape') wizardModal.classList.add('hidden'); });
-        wizardModal.addEventListener('click', (e) => { if (e.target === e.currentTarget) wizardModal.classList.add('hidden'); });
-
-        // ─── INIT ───
-        document.addEventListener('DOMContentLoaded', () => initMap(0, 0));
-        window.addEventListener('resize', () => { if (map) map.invalidateSize(); });
-
-        console.log('🔮 The Reaper · full‑screen tracking');
+        // ================================================================
+        //  LOG STARTUP
+        // ================================================================
+        console.log('🔮 The Reaper · Tracking Dashboard initialized');
     </script>
 </body>
 </html>
