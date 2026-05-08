@@ -358,6 +358,49 @@
             background: #66f0ff;
             box-shadow: 0 0 40px rgba(0, 229, 255, 0.3);
         }
+        .ring-modal-box .btn-stop-ring.hidden {
+            display: none !important;
+        }
+
+        /* ---------- TOAST MESSAGE (for unregistered device) ---------- */
+        .toast-message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            border-radius: 16px;
+            padding: 30px 40px;
+            text-align: center;
+            z-index: 90;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+        }
+        .toast-message.active {
+            opacity: 1;
+            visibility: visible;
+        }
+        .toast-message .toast-icon {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .toast-message h3 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.1rem;
+            color: #00e5ff;
+            margin-bottom: 4px;
+        }
+        .toast-message p {
+            color: #ccc;
+            font-size: 0.85rem;
+        }
 
         /* ---------- RESPONSIVE ---------- */
         @media (max-width: 640px) {
@@ -411,6 +454,15 @@
                 height: 56px;
             }
             .ring-modal-box h2 {
+                font-size: 0.9rem;
+            }
+            .toast-message {
+                padding: 20px 24px;
+            }
+            .toast-message .toast-icon {
+                font-size: 2.2rem;
+            }
+            .toast-message h3 {
                 font-size: 0.9rem;
             }
         }
@@ -496,19 +548,26 @@
 
     </div>
 
-    <!-- ===== RING MODAL (60% transparency) ===== -->
+    <!-- ===== RING MODAL (shown on registered device) ===== -->
     <div class="ring-modal-overlay" id="ring-modal">
         <div class="ring-modal-box">
             <div class="bell-icon">
                 <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" fill="currentColor"/>
-                    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z" fill="currentColor" opacity="0.3"/>
+                    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5S11.5 3.17 11.5 4v.68C8.64 5.36 7 7.92 7 11v5l-2 2v1h16v-1l-2-2z" fill="currentColor"/>
+                    <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5S11.5 3.17 11.5 4v.68C8.64 5.36 7 7.92 7 11v5l-2 2v1h16v-1l-2-2z" fill="currentColor" opacity="0.3"/>
                 </svg>
             </div>
             <h2>🔔 INCOMING RING</h2>
-            <p>The registered device is ringing your device.<br/>Click STOP to silence.</p>
+            <p>Your device is ringing.<br/>Click STOP to silence.</p>
             <button class="btn-stop-ring" id="stop-ring-btn">STOP RING</button>
         </div>
+    </div>
+
+    <!-- ===== TOAST MESSAGE (shown on unregistered device) ===== -->
+    <div class="toast-message" id="ring-toast">
+        <span class="toast-icon">📞</span>
+        <h3>Your registered phone is ringing</h3>
+        <p>Listen closely to locate the device.</p>
     </div>
 
     <!-- ===== MAP & ROUTING LIBRARIES ===== -->
@@ -575,6 +634,7 @@
         let ringAudioContext = null;
         let ringInterval = null;
         let isRinging = false;
+        let ringCommandRef = null;
 
         // DOM refs
         const statusEl = document.getElementById('device-status');
@@ -587,6 +647,7 @@
         const logoutBtn = document.getElementById('logout-btn');
         const ringModal = document.getElementById('ring-modal');
         const stopRingBtn = document.getElementById('stop-ring-btn');
+        const ringToast = document.getElementById('ring-toast');
 
         // ================================================================
         //  AUTH STATE LISTENER
@@ -600,6 +661,8 @@
                 startPeriodicUpdates();
                 // Listen for phone location changes from Firebase
                 listenToPhoneLocation();
+                // Listen for ring commands
+                listenToRingCommands();
             } else {
                 alert('Please log in again.');
                 window.location.href = 'index.html';
@@ -623,10 +686,36 @@
         }
 
         // ================================================================
+        //  LISTEN TO RING COMMANDS
+        // ================================================================
+        function listenToRingCommands() {
+            if (!currentUid) return;
+            ringCommandRef = ref(database, 'users/' + currentUid + '/ringCommand');
+            onValue(ringCommandRef, (snapshot) => {
+                const command = snapshot.val();
+                if (command === true) {
+                    // Ring command received — start ringing on this device
+                    if (isRegisteredDevice) {
+                        // Registered device: start ringing
+                        startRing();
+                    } else {
+                        // Unregistered device: show toast message
+                        showRingToast();
+                    }
+                } else if (command === false) {
+                    // Stop ring command
+                    stopRing();
+                    hideRingToast();
+                }
+            });
+        }
+
+        // ================================================================
         //  LOGOUT HANDLER
         // ================================================================
         logoutBtn.addEventListener('click', async () => {
             stopRing();
+            hideRingToast();
             if (updateInterval) clearInterval(updateInterval);
             if (locationWatchId) navigator.geolocation.clearWatch(locationWatchId);
             await signOut(auth);
@@ -784,7 +873,7 @@
         }
 
         // ================================================================
-        //  UPDATE PHONE MARKER (📱) with pulsing blue circle
+        //  UPDATE PHONE MARKER (📱) with pulsing blue circle (REDUCED radius)
         // ================================================================
         function updatePhoneMarker(lat, lon) {
             if (!map) {
@@ -801,9 +890,9 @@
                 phoneMarker = L.marker([lat, lon], { icon }).addTo(map)
                     .bindPopup('<b>Registered Device</b><br>Phone location');
 
-                // ---- Create pulsing blue circle (50% opacity) ----
+                // ---- Create pulsing blue circle (50% opacity, REDUCED radius 50m) ----
                 pulseCircle = L.circle([lat, lon], {
-                    radius: 200,
+                    radius: 50, // Reduced from 200 to 50
                     color: '#00e5ff',
                     fillColor: '#00e5ff',
                     fillOpacity: 0.5,
@@ -818,7 +907,7 @@
                     if (pulseCircle) {
                         pulsePhase += 0.02;
                         const scale = 1 + 0.15 * Math.sin(pulsePhase);
-                        const currentRadius = 200 * scale;
+                        const currentRadius = 50 * scale; // Base radius 50
                         const currentOpacity = 0.3 + 0.2 * Math.sin(pulsePhase + 0.5);
                         pulseCircle.setRadius(currentRadius);
                         pulseCircle.setStyle({ fillOpacity: currentOpacity });
@@ -904,7 +993,6 @@
             }
 
             // ---- Zoom to ~50 meters (zoom level 18) ----
-            // First fit bounds to show both points, then zoom in further
             const bounds = L.latLngBounds([currentLoc.lat, currentLoc.lon], [phoneLoc.lat, phoneLoc.lon]);
             map.fitBounds(bounds, { padding: [20, 20], maxZoom: 18 });
 
@@ -940,22 +1028,31 @@
         });
 
         // ================================================================
-        //  RING DEVICE — shows modal + plays ringtone on UNREGISTERED device
+        //  RING DEVICE — sets ring command (registered device rings)
         // ================================================================
         ringBtn.addEventListener('click', () => {
-            if (isRinging) {
-                stopRing();
-                return;
-            }
-            startRing();
+            if (!currentUid) return;
+            // Set ring command to true — registered device will start ringing
+            const ringRef = ref(database, 'users/' + currentUid + '/ringCommand');
+            set(ringRef, true).catch(() => {});
+            // Show toast on unregistered device
+            showRingToast();
+            // Auto-hide toast after 5 seconds
+            setTimeout(() => {
+                hideRingToast();
+            }, 5000);
         });
 
+        // ================================================================
+        //  RING FUNCTIONS (registered device)
+        // ================================================================
         function startRing() {
             if (isRinging) return;
             isRinging = true;
 
-            // ---- Show modal with 60% transparency ----
+            // ---- Show modal on registered device ----
             ringModal.classList.add('active');
+            stopRingBtn.classList.remove('hidden');
 
             // ---- Play ringtone ----
             try {
@@ -1003,6 +1100,7 @@
 
             // ---- Hide modal ----
             ringModal.classList.remove('active');
+            stopRingBtn.classList.add('hidden');
 
             // ---- Stop audio ----
             if (ringInterval) {
@@ -1014,6 +1112,12 @@
                     ringAudioContext.close();
                 } catch (_) {}
                 ringAudioContext = null;
+            }
+
+            // ---- Reset ring command in Firebase ----
+            if (currentUid) {
+                const ringRef = ref(database, 'users/' + currentUid + '/ringCommand');
+                set(ringRef, false).catch(() => {});
             }
         }
 
@@ -1028,19 +1132,30 @@
         });
 
         // ================================================================
-        //  KILL SWITCH — erases all user data
+        //  TOAST FUNCTIONS (unregistered device)
+        // ================================================================
+        function showRingToast() {
+            ringToast.classList.add('active');
+        }
+
+        function hideRingToast() {
+            ringToast.classList.remove('active');
+        }
+
+        // ================================================================
+        //  KILL SWITCH — erases registered device's data
         // ================================================================
         killBtn.addEventListener('click', async () => {
-            if (!currentUid) {
-                alert('No user session found.');
+            if (!currentUid || !registeredDeviceId) {
+                alert('No registered device to erase.');
                 return;
             }
 
-            const confirmMsg = '⚠️ DANGER: This will permanently erase all your data from The Reaper.\n\n' +
+            const confirmMsg = '⚠️ DANGER: This will permanently erase the registered device data from The Reaper.\n\n' +
                 'This includes:\n' +
                 '• Device registration\n' +
                 '• Location history\n' +
-                '• All user data\n\n' +
+                '• All device data\n\n' +
                 'This action cannot be undone. Are you sure?';
 
             if (!confirm(confirmMsg)) return;
@@ -1055,21 +1170,21 @@
                 // Stop ring if playing
                 stopRing();
 
-                // Delete all user data from Firebase
-                const userRef = ref(database, 'users/' + currentUid);
-                await remove(userRef);
+                // Delete the registered device's data from Firebase
+                const deviceRef = ref(database, 'users/' + currentUid + '/registeredDevices/' + registeredDeviceId);
+                await remove(deviceRef);
 
-                // Clear local storage
-                localStorage.removeItem('reaper_device_id');
+                // Also delete phoneLocation if it exists
+                const phoneLocRef = ref(database, 'users/' + currentUid + '/phoneLocation');
+                await remove(phoneLocRef).catch(() => {});
+
+                // Clear local storage of device ID (unregistered device still has its own ID)
+                // But we keep the logged-in session
 
                 // Clear map markers
                 if (phoneMarker) {
                     map.removeLayer(phoneMarker);
                     phoneMarker = null;
-                }
-                if (currentMarker) {
-                    map.removeLayer(currentMarker);
-                    currentMarker = null;
                 }
                 if (pulseCircle) {
                     map.removeLayer(pulseCircle);
@@ -1084,15 +1199,15 @@
                 deviceGrid.innerHTML = '';
                 noDeviceMsg.classList.remove('hidden');
                 statusEl.className = 'ui-status unregistered';
-                statusText.textContent = '⚠ Data erased — device killed';
+                statusText.textContent = '⚠ Registered device data erased';
 
                 trackBtn.classList.add('hidden');
                 ringBtn.classList.add('hidden');
                 killBtn.classList.add('hidden');
 
-                alert('✅ All data has been erased from The Reaper.\n\nYou will be logged out now.');
+                alert('✅ Registered device data has been erased from The Reaper.');
 
-                // Log out
+                // Log out after kill
                 await signOut(auth);
                 window.location.href = 'index.html';
 
@@ -1157,7 +1272,7 @@
                     console.warn('Location error:', err.message);
                 }, {
                     enableHighAccuracy: true,
-                    maximumAge: 2000, // Get fresh location every 2 seconds
+                    maximumAge: 2000,
                     timeout: 8000
                 }
             );
@@ -1247,5 +1362,6 @@
         // ================================================================
         console.log('🔮 The Reaper · Tracking Dashboard initialized');
     </script>
+
 </body>
 </html>
